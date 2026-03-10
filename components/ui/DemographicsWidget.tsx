@@ -272,13 +272,14 @@ export default function DemographicsWidgetOverlay() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const show = () => setVisible(true);
+    // Demographics disabled — keep code intact but don't activate
+    const show = () => {};
     const hide = () => setVisible(false);
-    window.addEventListener('propheus:state2', show);
-    window.addEventListener('propheus:state2:exit', hide);
+    window.addEventListener('propheus:state1', show);
+    window.addEventListener('propheus:state1:exit', hide);
     return () => {
-      window.removeEventListener('propheus:state2', show);
-      window.removeEventListener('propheus:state2:exit', hide);
+      window.removeEventListener('propheus:state1', show);
+      window.removeEventListener('propheus:state1:exit', hide);
     };
   }, []);
 

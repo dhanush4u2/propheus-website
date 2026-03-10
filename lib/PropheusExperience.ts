@@ -1,25 +1,28 @@
 ﻿import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { getLenisInstance } from './SmoothScroll';
 import { HeroAnimationController, StateAnimations, AnimationConfig } from './HeroAnimationController';
 
 /* ============================================
    PropheusExperience — Cinematic State Machine
    ============================================
-   4-state scroll-direction controller.
-   Modular animation system via HeroAnimationController.
-   Accumulated scroll delta with threshold.
+   5-state controller.
+   States 0–3: controlled by arrow keys and ActivateAgent component.
+   State 4: Lenis-driven manual scroll (frames 240→360).
 
    States:
-     0 — Frame 0, headline visible, navbar visible, signal panels hidden
-     1 — Frame 0, headline fades out, glass signal panels stagger in
-         with connector lines + glow nodes, navbar visible
-     2 — Panels/connectors collapse, navbar fades, canvas plays 0→61
-     3 — Frames 61→122, all UI hidden, final hero
+     0 — Frame 0, headline + navbar visible (instant), just Launch button
+     1 — Frame 0 hold, topo/weather/StoreMapMarkers stagger in, headline + navbar stay
+     2 — Frame 0→120, sentiment/competitor/promo in, navbar fades, prev exits
+     3 — Frame 120→240, traffic/footfall in, prev exits, "Exit Agent" visible
+     4 — Lenis scroll: frames 240→360, smooth hero exit at final frame
 
-   Scroll Lock:
-     - States 0–2: ALL scroll completely blocked.
-     - State 3 complete: scroll unlocked.
-     - Scroll back to top: re-locked at state 3.
+   Input:
+     - States 0–3: Arrow keys (↑↓←→) and ActivateAgent component (Launch / ◀▶ / Exit).
+     - Scroll wheel and trackpad are completely blocked during auto-scroll states.
+     - State 4: Lenis scroll active over pinned hero (frames 240–360).
+     - Past frame 360: natural page scroll (hero scrolls out of view).
+     - Scroll back to top: re-enters Lenis mode, then auto-scroll in reverse.
    ============================================ */
 
 export interface PropheusExperienceOptions {
@@ -65,9 +68,31 @@ export class PropheusExperience {
     // STATE MACHINE
     // ========================================
     private heroState = 0;
+    private pendingState = 0;
     private isAnimating = false;
     private isHeroLocked = true;
-    private activeTimeline: gsap.core.Timeline | null = null;
+    private activeUITimeline: gsap.core.Timeline | null = null;
+    private activeFrameTween: gsap.core.Tween | null = null;
+    private uiDone = false;
+    private frameDone = false;
+    private isReverseTransition = false;
+    private scrollWindowStart = 0;
+    private lastWheelTime = 0;
+    private transitionEndTime = 0;
+    private readonly SCROLL_WINDOW_MS = 600;
+    private readonly WHEEL_GAP_MS = 200;
+    private readonly POST_TRANSITION_COOLDOWN_MS = 500;
+
+    // ========================================
+    // LENIS SCROLL MODE (state 4)
+    // ========================================
+    private isLenisScrollMode = false;
+    private lenisExitDone = false;   // true once past frame 360 (navbar shown)
+    private lenisScrollStart = 0;    // scrollY when Lenis mode started
+    private readonly LENIS_FRAME_START = 240;
+    private readonly LENIS_FRAME_END = 360;
+    private readonly LENIS_SCROLL_DISTANCE = 700; // px of scroll for 120 frames (≈2x faster than 1400)
+    private readonly LENIS_POST_BUFFER = 0; // no dead scroll — hero starts scrolling off immediately at 1:1
 
     // ========================================
     // SCROLL SENSITIVITY — accumulated delta
@@ -76,76 +101,106 @@ export class PropheusExperience {
     private readonly SCROLL_THRESHOLD = 50; // ~3x more sensitive
 
     // ========================================
+    // GLOBAL INPUT COOLDOWN — configurable delay (ms)
+    // Applies to key presses, ActivateAgent advance/reverse.
+    // Adjust this value for trial and error.
+    // ========================================
+    private readonly INPUT_COOLDOWN_MS = 1000;
+    private lastInputTime = 0;
+
+    // ========================================
     // ANIMATION CONTROLLER
     // ========================================
     private animController: HeroAnimationController;
 
+    // Cached DOM references for Lenis scroll (avoid querySelectorAll on every tick)
+    private _lenisContentEl: HTMLElement | null = null;
+    private _lenisTextBlock: HTMLElement | null = null;
+    private _lenisOuterCols: HTMLElement[] = [];
+    private _lenisInnerCols: HTMLElement[] = [];
+    private _lenisDomCached = false;
+
     // Event handlers
     private tickerCallback: (() => void) | null = null;
     private _boundResize: () => void;
+    private _launched = false;
 
-    // Scroll lock handlers
-    private _onWheel = (e: WheelEvent): void => {
-        if (!this.isHeroLocked) return;
+    // ========================================
+    // INPUT HANDLERS
+    // Wheel/trackpad scroll is NOT used for state transitions.
+    // Only arrow keys and the ActivateAgent component drive states.
+    // ========================================
 
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (this.isAnimating) return;
-
-        // Accumulate scroll delta
-        this.accumulatedDelta += e.deltaY;
-
-        if (this.accumulatedDelta >= this.SCROLL_THRESHOLD) {
-            this.accumulatedDelta = 0;
-            this.advanceState();
-        } else if (this.accumulatedDelta <= -this.SCROLL_THRESHOLD) {
-            this.accumulatedDelta = 0;
-            this.reverseState();
+    /* Block wheel/touch from moving the page while hero is locked */
+    private _onWheelBlock = (e: WheelEvent): void => {
+        if (this.isHeroLocked) {
+            e.preventDefault();
         }
     };
 
-    private _touchStartY = 0;
-
-    private _onTouchStart = (e: TouchEvent): void => {
-        if (!this.isHeroLocked) return;
-        this._touchStartY = e.touches[0].clientY;
-    };
-
-    private _onTouchMove = (e: TouchEvent): void => {
-        if (!this.isHeroLocked) return;
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (this.isAnimating) return;
-
-        const touchY = e.touches[0].clientY;
-        const delta = this._touchStartY - touchY;
-
-        if (Math.abs(delta) < 30) return;
-        this._touchStartY = touchY;
-
-        if (delta > 0) {
-            this.advanceState();
-        } else {
-            this.reverseState();
+    private _onTouchBlock = (e: TouchEvent): void => {
+        if (this.isHeroLocked) {
+            e.preventDefault();
         }
     };
 
+    /* Arrow keys: up/down advance/reverse state */
     private _onKeyDown = (e: KeyboardEvent): void => {
         if (!this.isHeroLocked) return;
+        const now = Date.now();
+        if (now - this.lastInputTime < this.INPUT_COOLDOWN_MS) return;
 
-        const scrollKeys = ['ArrowDown', 'ArrowUp', 'Space', 'PageDown', 'PageUp', 'Home', 'End'];
-        if (scrollKeys.includes(e.key)) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
             e.preventDefault();
-            if (this.isAnimating) return;
-
-            if (e.key === 'ArrowDown' || e.key === 'Space' || e.key === 'PageDown') {
-                this.advanceState();
-            } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-                this.reverseState();
-            }
+            this.lastInputTime = now;
+            if (this.isAnimating) this.skipToEnd();
+            this.advanceState();
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            this.lastInputTime = now;
+            if (this.isAnimating) this.skipToEnd();
+            this.reverseState();
         }
+    };
+
+    /* ActivateAgent component events */
+    private _onAgentLaunch = (): void => {
+        if (this.heroState !== 0 || this.isAnimating) return;
+        this.advanceState(); // 0 → 1
+    };
+
+    private _onAgentAdvance = (): void => {
+        if (!this.isHeroLocked) return;
+        if (this.isAnimating) this.skipToEnd();
+        this.advanceState();
+    };
+
+    private _onAgentReverse = (): void => {
+        if (!this.isHeroLocked) return;
+        if (this.isAnimating) this.skipToEnd();
+        this.reverseState();
+    };
+
+    private _onAgentExit = (): void => {
+        if (this.isAnimating) this.skipToEnd();
+
+        // Hide state 3 components
+        this.animController.applyQuick('state4', 0.5);
+
+        // Enter Lenis scroll mode (hero becomes scrollable at frame 240)
+        this.heroState = 4;
+        this.enterLenisScrollMode();
+
+        // After DOM settles, auto-scroll via Lenis to the end of the Lenis zone
+        requestAnimationFrame(() => {
+            const lenis = getLenisInstance();
+            if (lenis) {
+                lenis.scrollTo(this.LENIS_SCROLL_DISTANCE, {
+                    duration: 2.0,
+                    easing: (t: number) => 1 - Math.pow(1 - t, 3), // cubic ease-out
+                });
+            }
+        });
     };
 
     private _onScrollPin = (): void => {
@@ -154,18 +209,55 @@ export class PropheusExperience {
         }
     };
 
+    private _onForceExit = (): void => {
+        // Kill any active animations
+        if (this.activeUITimeline) { this.activeUITimeline.kill(); this.activeUITimeline = null; }
+        if (this.activeFrameTween) { this.activeFrameTween.kill(); this.activeFrameTween = null; }
+        this.animController.killAllTweens();
+
+        // Exit lenis-scroll-mode if it was active
+        if (this.isLenisScrollMode) {
+            this.isLenisScrollMode = false;
+            window.removeEventListener('scroll', this._onLenisScroll);
+            window.removeEventListener('wheel', this._onLenisWheel);
+        }
+
+        // Unlock hero if locked
+        if (this.isHeroLocked) {
+            this.disengageLock();
+        }
+
+        // Restore hero height (may have been expanded for lenis scroll room)
+        this.heroEl.style.height = '';
+        const stickyEl = this.heroEl.querySelector('.hero-sticky') as HTMLElement;
+        if (stickyEl) {
+            stickyEl.style.position = '';
+            stickyEl.style.top = '';
+            stickyEl.style.background = '';
+        }
+
+        // Set body to revealed state so navbar/page behave normally
+        document.body.classList.remove('lenis-scroll-mode');
+        document.body.classList.add('lenis-revealed');
+
+        this.heroState = 0;
+        this.isAnimating = false;
+        this.isHeroLocked = false;
+        console.log('[Force Exit] Hero force-exited via curtain navigation');
+    };
+
     private _onScrollBack = (): void => {
-        if (this.isHeroLocked) return;
+        if (this.isHeroLocked || this.isLenisScrollMode) return;
         if (window.scrollY <= 0) {
-            this.heroState = 6;
-            this.engageLock();
-            window.dispatchEvent(new CustomEvent('propheus:state6'));
-            console.log('[State Machine] Re-locked at state 6');
+            // Re-enter Lenis scroll mode at the end (frame 360)
+            this.heroState = 4;
+            this.enterLenisScrollMode();
+            console.log('[State Machine] Re-entered Lenis scroll mode at state 4');
         }
     };
 
     constructor(opts: PropheusExperienceOptions) {
-        this.frameCount = opts.frameCount ?? 177;
+        this.frameCount = opts.frameCount ?? 361;
         this.heroEl = opts.heroEl;
         this.canvas = opts.canvas;
         this.ctx = this.canvas.getContext('2d')!;
@@ -190,6 +282,9 @@ export class PropheusExperience {
         this.setCanvasSize();
         window.addEventListener('resize', this._boundResize);
 
+        // Force-exit handler (invoked by PageCurtain during curtain navigation)
+        window.addEventListener('propheus:force-exit', this._onForceExit);
+
         // Pin scroll and lock
         window.scrollTo(0, 0);
         this.engageLock();
@@ -209,8 +304,9 @@ export class PropheusExperience {
 
     /* ========================================
        REGISTER HERO ELEMENTS + ASSIGN ANIMATIONS
-       5-segment layout: seg0-text, seg1-headline,
-       signal-pointers (sp-*), seg4-text/strip/powered.
+       5-state layout:
+       seg1-headline + navbar (states 0-1), signal-pointers (sp-*).
+       State 3 is the last auto-scroll state. State 4 is Lenis.
        ======================================== */
     private registerHeroElements(): void {
 
@@ -221,13 +317,13 @@ export class PropheusExperience {
             hideState: number,
             prevState: number,
             baseDelay = 0,
+            lineDir: 'vertical' | 'horizontal' = 'vertical',
         ) => {
             const parts = ['dot', 'line', 'panel', 'content'] as const;
             const configs: Record<string, { type: string; show: AnimationConfig[]; hide: AnimationConfig[] }> = {
                 dot: {
                     type: 'dot',
                     show: [
-                        // Pulse comes first — big expand then settle
                         { type: 'fadeIn', opacity: 1, duration: 0.45, delay: baseDelay, easing: 'power3.out' },
                         { type: 'glowPulse', scale: 1.4, duration: 0.5, delay: baseDelay, easing: 'power3.out' },
                         { type: 'scaleUp', scale: 1, duration: 0.55, delay: baseDelay + 0.1, easing: 'elastic.out(1,0.5)' },
@@ -239,13 +335,11 @@ export class PropheusExperience {
                 },
                 line: {
                     type: 'line',
-                    // Line draws after the big pulse settles
-                    show: [{ type: 'scaleYDraw', duration: 0.85, delay: baseDelay + 0.52, easing: 'power3.out' }],
-                    hide: [{ type: 'scaleYCollapse', duration: 0.55, easing: 'power3.out' }],
+                    show: [{ type: lineDir === 'horizontal' ? 'scaleXDraw' : 'scaleYDraw', duration: 0.85, delay: baseDelay + 0.52, easing: 'power3.out' }],
+                    hide: [{ type: lineDir === 'horizontal' ? 'scaleXCollapse' : 'scaleYCollapse', duration: 0.55, easing: 'power3.out' }],
                 },
                 panel: {
                     type: 'panel',
-                    // Panel appears from the pulse direction after line is done
                     show: [
                         { type: 'fadeIn', opacity: 1, duration: 0.9, delay: baseDelay + 1.0, easing: 'power3.out' },
                         { type: 'slideDown', distance: 0, duration: 0.9, delay: baseDelay + 1.0, easing: 'power3.out' },
@@ -282,130 +376,82 @@ export class PropheusExperience {
                 // showState → shown
                 anims[`state${showState}`] = c.show;
                 // hideState+ → hidden
-                for (let s = hideState; s <= 6; s++) anims[`state${s}`] = c.hide;
+                for (let s = hideState; s <= 4; s++) anims[`state${s}`] = c.hide;
                 this.animController.assignAnimations(id, anims);
             }
         };
 
-        // ===== SEGMENT 0 — "Goodbye to Dashboards" =====
-        // State 0: canvas only, no UI
-        // State 1: ThoughtBubble fades in
-        // State 2+: ThoughtBubble fades out
-        const seg0Text = this.heroEl.querySelector('.seg0-text') as HTMLElement;
-        if (seg0Text) {
-            this.animController.registerElement('seg0-text', seg0Text);
-            this.animController.assignAnimations('seg0-text', {
-                state0: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state1: [
-                    { type: 'fadeIn', opacity: 1, duration: 0.9, easing: 'power3.out' },
-                    { type: 'slideDown', distance: 0, duration: 0.9, easing: 'power3.out' },
-                ],
-                state2: [
-                    { type: 'fadeOut', opacity: 0, duration: 0.5, easing: 'power2.in' },
-                    { type: 'slideUp', distance: 30, duration: 0.5, easing: 'power2.in' },
-                ],
-                state3: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state4: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state5: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state6: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-            });
-        }
-
-        // ===== SEGMENT 1 (previously seg1) — Headline + Topo + Weather =====
+        // ===== HEADLINE — "The world is your playground" =====
+        // State 0: already visible (instant)
+        // State 1: stays visible (components come in, canvas stays at 0)
+        // State 2+: fades out
         const seg1Headline = this.heroEl.querySelector('.seg1-headline') as HTMLElement;
         if (seg1Headline) {
             this.animController.registerElement('seg1-headline', seg1Headline);
             this.animController.assignAnimations('seg1-headline', {
-                state0: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state1: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
+                state0: [{ type: 'fadeIn', opacity: 1, duration: 0 }],
+                state1: [{ type: 'fadeIn', opacity: 1, duration: 0.8, delay: 1.0, easing: 'power2.out' }],
                 state2: [
-                    { type: 'fadeIn', opacity: 1, duration: 0.9, delay: 1.0, easing: 'power3.out' },
-                    { type: 'slideDown', distance: 0, duration: 0.9, delay: 1.0, easing: 'power3.out' },
+                    { type: 'fadeOut', opacity: 0, duration: 0.5, easing: 'power2.in' },
+                    { type: 'slideUp', distance: 20, duration: 0.5, easing: 'power2.in' },
                 ],
-                state3: [
-                    { type: 'fadeOut', opacity: 0, duration: 0.4, easing: 'power2.in' },
-                    { type: 'slideUp', distance: 20, duration: 0.4, easing: 'power2.in' },
-                ],
-                state4: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state5: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state6: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-            });
-        }
-        registerPointer('sp-topo', 2, 3, 1, 1.3);
-        registerPointer('sp-weather', 2, 3, 1, 2.6);
-
-        // ===== SEGMENT 2 — Sentiment + Competitor + PromoWatch =====
-        registerPointer('sp-sentiment', 3, 4, 2, 0.8);
-        registerPointer('sp-competitor', 3, 4, 2, 2.0);
-        registerPointer('sp-promo', 3, 4, 2, 3.2);
-
-        // ===== SEGMENT 3 — Traffic + Footfall =====
-        registerPointer('sp-traffic', 4, 5, 3, 0.8);
-        registerPointer('sp-footfall', 4, 5, 3, 2.0);
-
-        // ===== SEGMENT 4 — Conclusion =====
-        const seg4Text = this.heroEl.querySelector('.seg4-text') as HTMLElement;
-        if (seg4Text) {
-            this.animController.registerElement('seg4-text', seg4Text);
-            this.animController.assignAnimations('seg4-text', {
-                state0: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state1: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state2: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
                 state3: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
                 state4: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state5: [
-                    { type: 'fadeIn', opacity: 1, duration: 0.8, easing: 'power3.out' },
-                    { type: 'slideDown', distance: 0, duration: 0.8, easing: 'power3.out' },
-                ],
-                state6: [{ type: 'fadeOut', opacity: 0, duration: 0.5 }],
             });
         }
 
-        const seg4Strip = this.heroEl.querySelector('.seg4-strip') as HTMLElement;
-        if (seg4Strip) {
-            this.animController.registerElement('seg4-strip', seg4Strip);
-            this.animController.assignAnimations('seg4-strip', {
-                state0: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state1: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state2: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state3: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state4: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state5: [
-                    { type: 'fadeIn', opacity: 1, duration: 0.6, delay: 0.3, easing: 'power2.out' },
-                    { type: 'slideDown', distance: 0, duration: 0.6, delay: 0.3, easing: 'power2.out' },
-                ],
-                state6: [{ type: 'fadeOut', opacity: 0, duration: 0.5 }],
+        // ===== STATE 1 — Physical World: Places + Weather =====
+        // Signal pointers show at state 1, hide at state 2
+        // baseDelay = seconds after state starts before dot/line/panel/content animate in.
+        // dot at baseDelay, line at +0.52, panel at +1.0, content at +1.25.
+        registerPointer('sp-topo',       1, 2, 0, 0);  // was 1.3
+        registerPointer('sp-weather',    1, 2, 0, 0);  // was 2.6
+        registerPointer('sp-vegetation', 1, 2, 0, 0);  // was 2.6
+
+        // ===== STATE 2 — Intelligence: Market Intelligence (left, horizontal pointer) + Urbanization (top-right, no pointer) =====
+        registerPointer('sp-marketintel', 2, 3, 1, 0.3, 'horizontal');
+
+        // Urbanization widget — registered directly, no signal pointer structure
+        const urbContainer = this.heroEl.querySelector('.urb-widget-container') as HTMLElement;
+        if (urbContainer) {
+            this.animController.registerElement('urb-widget', urbContainer);
+            this.animController.assignAnimations('urb-widget', {
+                state0: [{ type: 'fadeOut', opacity: 0, duration: 0 }],
+                state1: [{ type: 'fadeOut', opacity: 0, duration: 0.3, easing: 'power2.in' }],
+                state2: [{ type: 'fadeIn', opacity: 1, duration: 0.9, delay: 0.5, easing: 'power2.out' }],
+                state3: [{ type: 'fadeOut', opacity: 0, duration: 0.4 }],
+                state4: [{ type: 'fadeOut', opacity: 0, duration: 0.4 }],
             });
         }
 
-        const seg4Powered = this.heroEl.querySelector('.seg4-powered') as HTMLElement;
-        if (seg4Powered) {
-            this.animController.registerElement('seg4-powered', seg4Powered);
-            this.animController.assignAnimations('seg4-powered', {
-                state0: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state1: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state2: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
+        // ===== STATE 3 — Footfall + Parking Analytics (vertical, --up pointer) =====
+        registerPointer('sp-footfall', 3, 4, 2, 0.3);
+        registerPointer('sp-parking',  3, 4, 2, 0.3);
+
+        // ===== CLOUDS — drift layer visible at states 0 & 1 =====
+        const heroClouds = this.heroEl.querySelector('.hero-clouds') as HTMLElement;
+        if (heroClouds) {
+            this.animController.registerElement('hero-clouds', heroClouds);
+            this.animController.assignAnimations('hero-clouds', {
+                state0: [{ type: 'fadeIn', opacity: 1, duration: 0 }],
+                state1: [{ type: 'fadeIn', opacity: 1, duration: 0.8, delay: 1.0, easing: 'power2.out' }],
+                state2: [{ type: 'fadeOut', opacity: 0, duration: 0.55, easing: 'power3.out' }],
                 state3: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
                 state4: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state5: [
-                    { type: 'fadeIn', opacity: 1, duration: 0.5, delay: 0.6, easing: 'power2.out' },
-                ],
-                state6: [{ type: 'fadeOut', opacity: 0, duration: 0.5 }],
             });
         }
 
         // ===== NAVBAR =====
+        // Visible at states 0 & 1, hidden from state 2 onwards
         const navbar = document.querySelector('.site-navbar') as HTMLElement;
         if (navbar) {
             this.animController.registerElement('navbar', navbar);
             this.animController.assignAnimations('navbar', {
-                state0: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state1: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state2: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
+                state0: [{ type: 'fadeIn', opacity: 1, duration: 0 }],
+                state1: [{ type: 'fadeIn', opacity: 1, duration: 0.8, delay: 1.0, easing: 'power2.out' }],
+                state2: [{ type: 'fadeOut', opacity: 0, duration: 0.5, easing: 'power2.in' }],
                 state3: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
                 state4: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state5: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
-                state6: [{ type: 'fadeOut', opacity: 0, duration: 0.3 }],
             });
         }
     }
@@ -428,10 +474,16 @@ export class PropheusExperience {
 
         this.stopLenis();
 
-        window.addEventListener('wheel', this._onWheel, { passive: false });
-        window.addEventListener('touchstart', this._onTouchStart, { passive: true });
-        window.addEventListener('touchmove', this._onTouchMove, { passive: false });
+        // Block wheel/touch from scrolling the page (but don't use them for state transitions)
+        window.addEventListener('wheel', this._onWheelBlock, { passive: false });
+        window.addEventListener('touchmove', this._onTouchBlock, { passive: false });
+        // Arrow keys still drive states
         window.addEventListener('keydown', this._onKeyDown);
+        // ActivateAgent component events
+        window.addEventListener('propheus:launch', this._onAgentLaunch);
+        window.addEventListener('propheus:advance', this._onAgentAdvance);
+        window.addEventListener('propheus:reverse', this._onAgentReverse);
+        window.addEventListener('propheus:exit-agent', this._onAgentExit);
 
         window.removeEventListener('scroll', this._onScrollBack);
     }
@@ -450,10 +502,13 @@ export class PropheusExperience {
         const lenis = getLenisInstance();
         if (lenis) lenis.start();
 
-        window.removeEventListener('wheel', this._onWheel);
-        window.removeEventListener('touchstart', this._onTouchStart);
-        window.removeEventListener('touchmove', this._onTouchMove);
+        window.removeEventListener('wheel', this._onWheelBlock);
+        window.removeEventListener('touchmove', this._onTouchBlock);
         window.removeEventListener('keydown', this._onKeyDown);
+        window.removeEventListener('propheus:launch', this._onAgentLaunch);
+        window.removeEventListener('propheus:advance', this._onAgentAdvance);
+        window.removeEventListener('propheus:reverse', this._onAgentReverse);
+        window.removeEventListener('propheus:exit-agent', this._onAgentExit);
 
         window.addEventListener('scroll', this._onScrollBack, { passive: true });
 
@@ -473,19 +528,64 @@ export class PropheusExperience {
     }
 
     /* ========================================
+       SCROLL WINDOW — 2-tier interrupt system.
+       1) Grace window (600ms): ignore all scrolls.
+       2) Past window + gap detected (200ms pause in wheel events):
+          intentional re-scroll → fade out components, skip to end.
+       Continuous events (gap < 200ms) past the window are
+       treated as trackpad/mouse momentum and ignored.
+       Touch and keyboard pass gap=Infinity (always new intent).
+       ======================================== */
+    private handleScrollDuringAnimation(wheelGap = Infinity): void {
+        this.accumulatedDelta = 0;
+        const elapsed = Date.now() - this.scrollWindowStart;
+
+        // Within grace window — completely ignore
+        if (elapsed < this.SCROLL_WINDOW_MS) return;
+
+        // Past grace window — require a gap to detect intentional re-scroll
+        if (wheelGap < this.WHEEL_GAP_MS) return;
+
+        // Never skip reverse transitions — trackpad scroll-up is choppy
+        // and creates false gaps. Let the animation play out naturally.
+        if (this.isReverseTransition) return;
+
+        // Intentional new scroll — skip to end
+        this.skipToEnd();
+    }
+
+    private skipToEnd(): void {
+        // Kill & snap component animations to destination
+        if (this.activeUITimeline) {
+            this.activeUITimeline.kill();
+            this.activeUITimeline = null;
+        }
+        this.animController.killAllTweens();
+        this.animController.applyInstant(`state${this.pendingState}`);
+
+        // Kill frame tween and snap canvas immediately
+        if (this.activeFrameTween) {
+            this.activeFrameTween.kill();
+            this.activeFrameTween = null;
+        }
+        const frames = [0, 0, 120, 240, 240];
+        this.targetFrame = frames[this.pendingState];
+        this.currentFrame = frames[this.pendingState];
+
+        // Finalize synchronously — heroState is now up to date
+        this.finalizeTransition(this.pendingState);
+        console.log(`[State] Skipped to state ${this.pendingState}`);
+    }
+
+    /* ========================================
        STATE ADVANCE / REVERSE
        ======================================== */
     private advanceState(): void {
         const from = this.heroState;
         const to = from + 1;
 
-        // At state 6, the next scroll forward disengages the lock instead of advancing
-        if (from === 6) {
-            this.disengageLock();
-            return;
-        }
-
-        if (to > 6) return;
+        // State 3 is the last auto-scroll state; ActivateAgent "Exit Agent" enters Lenis
+        if (to > 3) return;
 
         this.isAnimating = true;
         console.log(`[State] ${from} → ${to}`);
@@ -498,75 +598,374 @@ export class PropheusExperience {
 
         if (to < 0) return;
 
-        // Notify overlay to hide when leaving state 6
-        if (from === 6) {
-            window.dispatchEvent(new CustomEvent('propheus:state6:exit'));
-        }
-
         this.isAnimating = true;
         console.log(`[State] ${from} → ${to}`);
         this.runTransition(from, to);
     }
 
     /* ========================================
-       STATE TRANSITIONS — 5 segments
-       Frames: 0→61→90→120→146→176
-       Each transition: UI anim + canvas frame sweep
+       FINALIZE — called when a transition is fully done.
+       Does NOT kill timelines — killing is only done
+       by runTransition (new transition) or skipToEnd.
+       ======================================== */
+    private finalizeTransition(to: number): void {
+        this.heroState = to;
+        this.pendingState = to;
+        this.isAnimating = false;
+        this.accumulatedDelta = 0;
+        this.activeUITimeline = null;
+        this.activeFrameTween = null;
+        this.uiDone = false;
+        this.frameDone = false;
+        this.isReverseTransition = false;
+        this.scrollWindowStart = 0;
+        this.transitionEndTime = Date.now();
+        console.log(`[State] Arrived at ${to}`);
+
+        // Notify ActivateAgent and any other listeners of the new state
+        window.dispatchEvent(new CustomEvent('propheus:statechange', { detail: { state: to } }));
+
+        // State 3: do NOT auto-enter Lenis. Wait for ActivateAgent "Exit Agent" button.
+    }
+
+    /* ========================================
+       STATE TRANSITIONS
+       Frames: 0→0→120→240→240
+       States 0–3: auto-scroll with GSAP.
+       State 4: enters Lenis scroll mode.
+
+       Component animations and canvas frame sweep are
+       separated so scroll window can skip UI independently.
        ======================================== */
     private runTransition(from: number, to: number): void {
-        if (this.activeTimeline) {
-            this.activeTimeline.kill();
-            this.activeTimeline = null;
-        }
+        // Kill any existing animations
+        if (this.activeUITimeline) { this.activeUITimeline.kill(); this.activeUITimeline = null; }
+        if (this.activeFrameTween) { this.activeFrameTween.kill(); this.activeFrameTween = null; }
 
-        // Dispatch state-specific UI events so self-managing React components
-        // can react without being registered in the GSAP animation controller.
+        // Safety net: kill ALL orphaned GSAP tweens on registered elements.
+        // Prevents stale delayed tweens from a previous transition from
+        // re-showing components that belong to a different state.
+        this.animController.killAllTweens();
+
+        this.pendingState = to;
+        this.uiDone = false;
+        this.frameDone = false;
+        this.isReverseTransition = to < from;
+        this.scrollWindowStart = Date.now();
+
+        // Dispatch state-specific UI events for self-managing React components.
+        if (to === 1) window.dispatchEvent(new CustomEvent('propheus:state1'));
+        if (from === 1 && to !== 1) window.dispatchEvent(new CustomEvent('propheus:state1:exit'));
         if (to === 2) window.dispatchEvent(new CustomEvent('propheus:state2'));
         if (from === 2 && to !== 2) window.dispatchEvent(new CustomEvent('propheus:state2:exit'));
+        if (to === 3) window.dispatchEvent(new CustomEvent('propheus:state3'));
+        if (from === 3 && to !== 3) window.dispatchEvent(new CustomEvent('propheus:state3:exit'));
 
-        const tl = gsap.timeline({
-            onComplete: () => {
-                this.heroState = to;
-                this.isAnimating = false;
-                this.accumulatedDelta = 0;
-                console.log(`[State] Arrived at ${to}`);
-                // State 6 is the final frame — dispatch event but keep lock
-                // User must scroll once more to proceed past hero
-                if (to === 6) {
-                    window.dispatchEvent(new CustomEvent('propheus:state6'));
-                }
-            },
-        });
-        this.activeTimeline = tl;
-
-        // Frame ranges per segment (state0=0, state1=0, state2=61, state3=90, state4=120, state5=146, state6=176)
-        const frames = [0, 0, 61, 90, 120, 146, 176];
-        const startFrame = frames[from];
-        const endFrame = frames[to];
-        const direction = to > from ? 1 : -1;
-        const frameDuration = Math.abs(endFrame - startFrame) * 0.018; // ~18ms/frame
-
-        const segmentKey = `state${to}`;
-
-        // Collect all registered IDs that should show/hide at each state
+        // --- UI animations (component fade/slide/scale) ---
+        const uiTl = gsap.timeline();
         const allIds = this.animController.getAllRegisteredIds();
         const stateKey = `state${to}`;
 
-        // --- Build UI animations for destination state ---
         allIds.forEach((id) => {
             const elTl = this.animController.buildElementTimeline(id, stateKey);
-            if (elTl) tl.add(elTl, 0);
+            if (elTl) uiTl.add(elTl, 0);
         });
 
+        this.activeUITimeline = uiTl;
+
         // --- Canvas frame animation ---
-        const uiLeadTime = direction > 0 ? 0.3 : 0; // small delay after UI starts when advancing
-        this.frameProxy.value = startFrame;
-        tl.to(this.frameProxy, {
-            value: endFrame,
-            duration: Math.max(frameDuration, 0.8),
-            ease: 'power2.inOut',
-            onUpdate: () => { this.targetFrame = this.frameProxy.value; },
-        }, uiLeadTime);
+        // Frame ranges: state0=0, state1=0, state2=120, state3=240, state4=240
+        const frames = [0, 0, 120, 240, 240];
+        const startFrame = frames[from];
+        const endFrame = frames[to];
+        const direction = to > from ? 1 : -1;
+
+        if (startFrame !== endFrame) {
+            // Has canvas motion — finalize when BOTH UI and canvas complete.
+            // UI has long-delayed animations (baseDelay up to 3.2s+) that
+            // must finish. Canvas is typically ~2s. The last to complete
+            // calls finalizeTransition.
+            uiTl.eventCallback('onComplete', () => {
+                this.uiDone = true;
+                this.activeUITimeline = null;
+                if (this.frameDone) this.finalizeTransition(to);
+            });
+
+            const frameDuration = Math.abs(endFrame - startFrame) * (1 / 60);
+            const uiLeadTime = direction > 0 ? 0.3 : 0;
+            this.frameProxy.value = startFrame;
+            this.activeFrameTween = gsap.to(this.frameProxy, {
+                value: endFrame,
+                duration: Math.max(frameDuration, 0.8),
+                delay: uiLeadTime,
+                ease: 'power2.inOut',
+                onUpdate: () => { this.targetFrame = this.frameProxy.value; },
+                onComplete: () => {
+                    this.frameDone = true;
+                    this.activeFrameTween = null;
+                    if (this.uiDone) this.finalizeTransition(to);
+                },
+            });
+        } else {
+            // No canvas motion — finalize when UI completes (or on snap)
+            uiTl.eventCallback('onComplete', () => {
+                this.finalizeTransition(to);
+            });
+        }
+    }
+
+    /* ========================================
+       LENIS SCROLL MODE — State 5
+       Frames 360→480 mapped to scroll position.
+       Smooth exit: hero scrolls out naturally at frame 480.
+       ======================================== */
+    private _onLenisWheel = (e: WheelEvent): void => {
+        if (!this.isLenisScrollMode || this.isAnimating) return;
+
+        // At top of Lenis zone and scrolling up → exit to auto-scroll reverse
+        if (window.scrollY > 5) {
+            this.accumulatedDelta = 0;
+            return;
+        }
+
+        if (e.deltaY < 0) {
+            this.accumulatedDelta += e.deltaY;
+            if (this.accumulatedDelta <= -this.SCROLL_THRESHOLD) {
+                this.accumulatedDelta = 0;
+                this.exitLenisScrollModeReverse();
+            }
+        } else {
+            this.accumulatedDelta = 0;
+        }
+    };
+
+    private _onLenisScroll = (): void => {
+        if (!this.isLenisScrollMode) return;
+
+        const scrollY = window.scrollY;
+        const rawProgress = Math.min(1, Math.max(0,
+            (scrollY - this.lenisScrollStart) / this.LENIS_SCROLL_DISTANCE
+        ));
+        // Smooth cubic ease-out: fast start, graceful slow finish
+        const progress = 1 - Math.pow(1 - rawProgress, 2.4);
+        const frame = this.LENIS_FRAME_START + rawProgress * (this.LENIS_FRAME_END - this.LENIS_FRAME_START);
+        this.targetFrame = frame;
+
+        // Drive the hero-to-page visual transition
+        this.updateLenisVisuals(progress);
+
+        // Let ActivateAgent fade its "Agent Activated" message
+        window.dispatchEvent(new CustomEvent('propheus:lenis-progress', { detail: { progress: rawProgress } }));
+
+        // Past the Lenis zone — switch body class so navbar CSS adapts (no opacity change here;
+        // the navbar becomes visible naturally via Navbar.tsx isScrolled detection once the user
+        // scrolls the hero out of view).
+        if (rawProgress >= 1 && !this.lenisExitDone) {
+            this.lenisExitDone = true;
+            document.body.classList.remove('lenis-scroll-mode');
+            document.body.classList.add('lenis-revealed');
+            console.log('[Lenis] Past final frame — lenis-revealed active');
+        }
+
+        // Scrolled back into the Lenis zone
+        if (rawProgress < 1 && this.lenisExitDone) {
+            this.lenisExitDone = false;
+            document.body.classList.add('lenis-scroll-mode');
+            document.body.classList.remove('lenis-revealed');
+        }
+
+        // Scrolled back to top of Lenis zone — exit back to auto-scroll state 3
+        if (scrollY <= 0) {
+            this.exitLenisScrollModeReverse();
+        }
+    };
+
+    private enterLenisScrollMode(): void {
+        this.isLenisScrollMode = true;
+        this.lenisExitDone = false;
+        this.isHeroLocked = false;
+
+        // Remove auto-scroll event listeners
+        window.removeEventListener('wheel', this._onWheelBlock);
+        window.removeEventListener('touchmove', this._onTouchBlock);
+        window.removeEventListener('keydown', this._onKeyDown);
+        window.removeEventListener('propheus:launch', this._onAgentLaunch);
+        window.removeEventListener('propheus:advance', this._onAgentAdvance);
+        window.removeEventListener('propheus:reverse', this._onAgentReverse);
+        window.removeEventListener('propheus:exit-agent', this._onAgentExit);
+        window.removeEventListener('scroll', this._onScrollPin);
+
+        // Enable page scroll but pin the hero
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.documentElement.style.touchAction = '';
+        document.body.style.touchAction = '';
+
+        // Set the hero section height to create scroll room
+        // Must suppress the hero-sticky white background BEFORE changing layout
+        // to prevent the 1-frame white flash that occurs when the height change
+        // exposes the white background before sticky positioning takes effect.
+        const stickyEl = this.heroEl.querySelector('.hero-sticky') as HTMLElement;
+        if (stickyEl) stickyEl.style.background = 'transparent';
+
+        this.heroEl.style.height = `calc(100vh + ${this.LENIS_SCROLL_DISTANCE + this.LENIS_POST_BUFFER}px)`;
+        // Recompute all ScrollTrigger positions after the layout shift so
+        // downstream pinned sections (WorkflowStoryWidget) don't overlap the hero.
+        requestAnimationFrame(() => ScrollTrigger.refresh());
+        // Make canvas + overlays sticky
+        if (stickyEl) {
+            stickyEl.style.position = 'sticky';
+            stickyEl.style.top = '0';
+        }
+
+        // Start Lenis
+        const lenis = getLenisInstance();
+        if (lenis) lenis.start();
+
+        // Mark body so navbar + other elements can adapt to dark background
+        document.body.classList.add('lenis-scroll-mode');
+        document.body.classList.remove('lenis-revealed');
+
+        // Pin at top so scroll starts from 0
+        window.scrollTo(0, 0);
+        this.lenisScrollStart = 0;
+
+        // Immediately hide ambient canvas — prevents blurred gradient halo during canvas shrink
+        this.ambientCanvas.style.opacity = '0';
+
+        // Cache DOM references for Lenis visuals (avoids querySelectorAll every scroll tick)
+        if (!this._lenisDomCached) {
+            this._lenisContentEl = this.heroEl.querySelector('.lenis-content') as HTMLElement;
+            this._lenisTextBlock = this.heroEl.querySelector('.lenis-text-block') as HTMLElement;
+            this._lenisOuterCols = Array.from(this.heroEl.querySelectorAll('.parallax-col-outer')) as HTMLElement[];
+            this._lenisInnerCols = Array.from(this.heroEl.querySelectorAll('.parallax-col-inner')) as HTMLElement[];
+            this._lenisDomCached = true;
+        }
+
+        // Snap to frame 360
+        this.targetFrame = this.LENIS_FRAME_START;
+        this.currentFrame = this.LENIS_FRAME_START;
+
+        // Reset visuals to fullscreen state
+        this.updateLenisVisuals(0);
+
+        window.addEventListener('scroll', this._onLenisScroll, { passive: true });
+        window.addEventListener('wheel', this._onLenisWheel, { passive: false });
+        window.removeEventListener('scroll', this._onScrollBack);
+
+        console.log('[Lenis] Scroll mode entered — frames 240→360');
+    }
+
+    private exitLenisScrollModeReverse(): void {
+        this.isLenisScrollMode = false;
+        this.lenisExitDone = false;
+        window.removeEventListener('scroll', this._onLenisScroll);
+        window.removeEventListener('wheel', this._onLenisWheel);
+
+        // Remove dark-mode class from body
+        document.body.classList.remove('lenis-scroll-mode');
+        document.body.classList.remove('lenis-revealed');
+
+        // Reset shrink visuals back to fullscreen
+        this.resetLenisVisuals();
+
+        // Reset hero height
+        this.heroEl.style.height = '100vh';
+        // Recompute ScrollTrigger positions now that hero height is back to 100vh
+        requestAnimationFrame(() => ScrollTrigger.refresh());
+        const stickyEl = this.heroEl.querySelector('.hero-sticky') as HTMLElement;
+        if (stickyEl) {
+            stickyEl.style.position = 'relative';
+            stickyEl.style.top = '';
+            stickyEl.style.background = ''; // restore white background
+        }
+
+        // Back to state 3 (frame 240) — ActivateAgent re-appears
+        this.targetFrame = 240;
+        this.currentFrame = 240;
+        this.engageLock();
+
+        // Show state 3 components and notify ActivateAgent
+        this.animController.applyQuick('state3', 0.4);
+        this.finalizeTransition(3);
+
+        // Notify ActivateAgent to reappear at step 3
+        window.dispatchEvent(new CustomEvent('propheus:agent-reenter'));
+
+        console.log('[Lenis] Reverse exit — back to state 3 with ActivateAgent');
+    }
+
+    /* ========================================
+       LENIS VISUALS — hero-to-page transition.
+       Canvas crops via clip-path (no distortion).
+       4-column parallax images reveal behind it.
+       ======================================== */
+    private updateLenisVisuals(progress: number): void {
+        const vw = this.displayWidth;
+        const vh = this.displayHeight;
+
+        // --- Canvas crop: clip-path inset shrinks visible area ---
+        // At progress 0: full screen. At progress 1: centred 1:1 card.
+        const targetSize = Math.min(vw * 0.28, 450);
+        const centerY = vh * 0.50; // 50% keeps card centred with room below for text
+
+        const finalTop = centerY - targetSize / 2;
+        const finalBottom = vh - (centerY + targetSize / 2);
+        const finalLeft = (vw - targetSize) / 2;
+        const finalRight = finalLeft;
+        const radius = progress * 20;
+
+        this.canvas.style.clipPath = `inset(${progress * finalTop}px ${progress * finalRight}px ${progress * finalBottom}px ${progress * finalLeft}px round ${radius}px)`;
+
+        // --- Content fades in after 20% progress (uses cached ref) ---
+        if (this._lenisContentEl) {
+            const cp = Math.max(0, (progress - 0.2) / 0.6);
+            this._lenisContentEl.style.opacity = String(Math.min(1, cp));
+        }
+
+        // --- 4-column parallax (uses cached refs — no DOM queries per tick) ---
+        const outerY = `translateY(${-progress * 400}px) translateZ(0)`;
+        const innerY = `translateY(${-progress * 220}px) translateZ(0)`;
+        for (let i = 0; i < this._lenisOuterCols.length; i++) {
+            this._lenisOuterCols[i].style.transform = outerY;
+        }
+        for (let i = 0; i < this._lenisInnerCols.length; i++) {
+            this._lenisInnerCols[i].style.transform = innerY;
+        }
+
+        // --- Text block slides up; words handle their own opacity via LenisTextReveal ---
+        if (this._lenisTextBlock) {
+            if (progress >= 0.58) {
+                const tp = Math.max(0, Math.min(1, (progress - 0.58) / 0.14));
+                this._lenisTextBlock.style.opacity = '1';
+                this._lenisTextBlock.style.transform = `translateX(-50%) translateY(${(1 - tp) * 34}px)`;
+            } else {
+                this._lenisTextBlock.style.opacity = '0';
+                this._lenisTextBlock.style.transform = `translateX(-50%) translateY(34px)`;
+            }
+        }
+    }
+
+    private resetLenisVisuals(): void {
+        this.canvas.style.clipPath = '';
+        this.ambientCanvas.style.opacity = '';
+
+        const bgEl = this.heroEl.querySelector('.lenis-bg') as HTMLElement;
+        if (bgEl) bgEl.style.opacity = '0';
+
+        if (this._lenisContentEl) this._lenisContentEl.style.opacity = '0';
+
+        for (let i = 0; i < this._lenisOuterCols.length; i++) {
+            this._lenisOuterCols[i].style.transform = '';
+        }
+        for (let i = 0; i < this._lenisInnerCols.length; i++) {
+            this._lenisInnerCols[i].style.transform = '';
+        }
+
+        if (this._lenisTextBlock) {
+            this._lenisTextBlock.style.opacity = '0';
+            this._lenisTextBlock.style.transform = 'translateX(-50%)';
+        }
     }
 
     /* ========================================
@@ -669,6 +1068,10 @@ export class PropheusExperience {
         if (this.loadingBar) {
             this.loadingBar.style.width = (progress * 100) + '%';
         }
+        // Notify PagePreloader with integer 0-100
+        window.dispatchEvent(new CustomEvent('propheus:load-progress', {
+            detail: { value: Math.round(progress * 100) },
+        }));
     }
 
     private hideLoadingBar(): void {
@@ -678,6 +1081,7 @@ export class PropheusExperience {
                 if (this.loadingBar) this.loadingBar.style.display = 'none';
             }, 500);
         }
+        window.dispatchEvent(new CustomEvent('propheus:load-complete'));
     }
 
     /* ========================================
@@ -756,12 +1160,18 @@ export class PropheusExperience {
        ======================================== */
     destroy(): void {
         window.removeEventListener('resize', this._boundResize);
-        window.removeEventListener('wheel', this._onWheel);
-        window.removeEventListener('touchstart', this._onTouchStart);
-        window.removeEventListener('touchmove', this._onTouchMove);
+        window.removeEventListener('propheus:force-exit', this._onForceExit);
+        window.removeEventListener('wheel', this._onWheelBlock);
+        window.removeEventListener('touchmove', this._onTouchBlock);
         window.removeEventListener('keydown', this._onKeyDown);
+        window.removeEventListener('propheus:launch', this._onAgentLaunch);
+        window.removeEventListener('propheus:advance', this._onAgentAdvance);
+        window.removeEventListener('propheus:reverse', this._onAgentReverse);
+        window.removeEventListener('propheus:exit-agent', this._onAgentExit);
         window.removeEventListener('scroll', this._onScrollBack);
         window.removeEventListener('scroll', this._onScrollPin);
+        window.removeEventListener('scroll', this._onLenisScroll);
+        window.removeEventListener('wheel', this._onLenisWheel);
         if (this.resizeTimer) clearTimeout(this.resizeTimer);
 
         if (this.tickerCallback) {
@@ -769,8 +1179,18 @@ export class PropheusExperience {
             this.tickerCallback = null;
         }
 
-        if (this.activeTimeline) this.activeTimeline.kill();
+        if (this.activeUITimeline) this.activeUITimeline.kill();
+        if (this.activeFrameTween) this.activeFrameTween.kill();
         this.animController.destroy();
+        this.resetLenisVisuals();
+
+        // Reset hero section styles
+        this.heroEl.style.height = '';
+        const stickyEl = this.heroEl.querySelector('.hero-sticky') as HTMLElement;
+        if (stickyEl) {
+            stickyEl.style.position = '';
+            stickyEl.style.top = '';
+        }
 
         document.documentElement.style.overflow = '';
         document.documentElement.style.touchAction = '';

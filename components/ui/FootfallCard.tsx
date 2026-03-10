@@ -78,10 +78,10 @@ function GlowCard({ children, className = '' }: { children: React.ReactNode; cla
       ref={cardRef}
       data-glow
       style={{
-        '--base': '150', '--spread': '30', '--radius': '24', '--border': '1.65',
+        '--base': '150', '--spread': '30', '--radius': '24', '--border': '2',
         '--backdrop': 'rgba(0,0,0,0.97)', '--backup-border': 'rgba(255,255,255,0.08)',
         '--size': '250', '--outer': '1',
-        '--border-size': 'calc(var(--border, 1.65) * 1px)',
+        '--border-size': 'calc(var(--border, 2) * 1px)',
         '--spotlight-size': 'calc(var(--size, 250) * 1px)',
         '--hue': 'calc(var(--base) + (var(--xp, 0) * var(--spread, 0)))',
         '--saturation': '100', '--lightness': '50',

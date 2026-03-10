@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 
 // ─── Brand Logos ───────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ type MarkerDef = {
     logo: React.ReactNode;
     x: number; // % of viewport width
     y: number; // % of viewport height
-    delay: number; // seconds after propheus:state2 fires (includes 2s initial hold)
+    delay: number; // seconds after propheus:state1 fires (includes 2s initial hold)
 };
 
 // Hand-placed clusters so markers sit over the building mass and never at sea.
@@ -88,20 +88,20 @@ type MarkerDef = {
 // Each entry: [x%, y%]  — "anchor point" at the geo-dot.
 const PLACED: [number, number][] = [
     // Left cluster — low-rise urban grid
-    [8,  72],
+    [4,  72],
     [14, 66],
     [20, 74],
-    [26, 68],
+    [26, 58],
     // Centre-left cluster — mid-density blocks
     [33, 62],
-    [39, 70],
-    [45, 65],
+    [39, 73],
+    [45, 69],
     // Centre cluster — downtown towers
-    [53, 63],
-    [59, 66],
-    [64, 72],
+    [54, 71],
+    [70, 69],
+    [64, 78],
     // Right cluster — skyscrapers + foreground buildings
-    [72, 62],
+    [72, 56],
     [80, 68],
     [88, 74],
 ];
@@ -128,8 +128,9 @@ const MARKERS: MarkerDef[] = PLACED.map(([x, y], i) => ({
     ...STORE_LOGOS[i],
     x,
     y,
-    // 2s event hold + left-to-right stagger of 0.13s per marker
-    delay: 2.0 + i * 0.13,
+    // Initial stagger: first marker at 0.1s, last at ~0.82s after propheus:state1
+    // Reduce delay here to make markers appear faster after state 1 activates.
+    delay: 0.1 + i * 0.06,
 }));
 
 // ─── Individual Marker ────────────────────────────────────────────────────────
@@ -138,7 +139,7 @@ type MarkerProps = MarkerDef & { playKey: number };
 
 const StoreMarker = ({ name, logo, x, y, delay, playKey }: MarkerProps) => (
     <div
-        style={{ left: `${x}%`, top: `${y}%`, position: 'absolute' }}
+        style={{ left: `${x}%`, top: `calc(${y}% + 3px)`, position: 'absolute' }}
         className="flex flex-col items-center -translate-x-1/2 -translate-y-[calc(100%-6px)]"
     >
         {/* Brand pill */}
@@ -200,16 +201,29 @@ const StoreMarker = ({ name, logo, x, y, delay, playKey }: MarkerProps) => (
 export default function StoreMapMarkers() {
     const [active, setActive] = useState(false);
     const [playKey, setPlayKey] = useState(0);
+    const comingBack = useRef(false);
 
     useEffect(() => {
-        const onEnter = () => { setActive(true); setPlayKey(k => k + 1); };
+        const onState2 = () => { comingBack.current = true; };
+        const onEnter = () => {
+            if (comingBack.current) {
+                comingBack.current = false;
+                // Delay marker appearance when returning from state2 (reverse scroll illusion)
+                setTimeout(() => { setActive(true); setPlayKey(k => k + 1); }, 2000);
+            } else {
+                setActive(true);
+                setPlayKey(k => k + 1);
+            }
+        };
         const onExit = () => setActive(false);
 
-        window.addEventListener('propheus:state2', onEnter);
-        window.addEventListener('propheus:state2:exit', onExit);
+        window.addEventListener('propheus:state2', onState2);
+        window.addEventListener('propheus:state1', onEnter);
+        window.addEventListener('propheus:state1:exit', onExit);
         return () => {
-            window.removeEventListener('propheus:state2', onEnter);
-            window.removeEventListener('propheus:state2:exit', onExit);
+            window.removeEventListener('propheus:state2', onState2);
+            window.removeEventListener('propheus:state1', onEnter);
+            window.removeEventListener('propheus:state1:exit', onExit);
         };
     }, []);
 

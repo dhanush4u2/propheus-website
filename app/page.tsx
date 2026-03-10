@@ -1,125 +1,246 @@
 import Navbar from '@/components/Navbar';
 import HeroExperience from '@/components/HeroExperience';
 import RetailFlow from '@/components/sections/RetailFlow';
+import DigitalAtlasSection from '@/components/sections/DigitalAtlasSection';
+import IndustrySection from '@/components/sections/IndustrySection';
 import Image from 'next/image';
-import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
+import PagePreloader from '@/components/PagePreloader';
+import NewsletterForm from '@/components/ui/NewsletterForm';
+import PageCurtain from '@/components/PageCurtain';
+
 
 export default function Home() {
     return (
         <>
+            <PagePreloader />
+            <PageCurtain />
             <Navbar />
             <HeroExperience />
+
+            {/* Breathing room between hero and RetailFlow */}
+            <div style={{ background: '#ffffff', height: 'clamp(80px, 10vw, 140px)' }} />
 
             {/* Section 1 — Retail Flow */}
             <RetailFlow />
 
+            {/* Section 2 — Digital Atlas */}
+            <div id="digital-atlas">
+                <DigitalAtlasSection />
+            </div>
+
+            {/* Section 3 — Industry capabilities */}
+            <div id="industry-section">
+                <IndustrySection />
+            </div>
+
             {/* CTA Footer */}
             <footer
+                id="cta-footer"
                 style={{
-                    background: '#000000',
+                    background: '#f8f8f8',
                     position: 'relative',
                     overflow: 'hidden',
-                    padding: 'clamp(100px, 13vw, 180px) clamp(20px, 6vw, 80px) clamp(60px, 7vw, 100px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    textAlign: 'center',
+                    borderTop: '1px solid #e5e5e5',
                 }}
             >
-                {/* grid */}
+                {/* Subtle grid */}
                 <div
                     aria-hidden="true"
                     style={{
                         position: 'absolute', inset: 0, pointerEvents: 'none',
-                        backgroundImage: 'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
-                        backgroundSize: '64px 64px',
-                        maskImage: 'radial-gradient(ellipse 70% 70% at 50% 30%, black 30%, transparent 100%)',
-                        WebkitMaskImage: 'radial-gradient(ellipse 70% 70% at 50% 30%, black 30%, transparent 100%)',
+                        backgroundImage: 'linear-gradient(rgba(0,0,0,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.022) 1px, transparent 1px)',
+                        backgroundSize: '72px 72px',
+                        maskImage: 'radial-gradient(ellipse 80% 80% at 50% 0%, black 20%, transparent 100%)',
+                        WebkitMaskImage: 'radial-gradient(ellipse 80% 80% at 50% 0%, black 20%, transparent 100%)',
                     }}
                 />
-                {/* teal glow orb */}
+                {/* Large teal glow — top center */}
                 <div
                     aria-hidden="true"
                     style={{
-                        position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)',
-                        width: 'clamp(400px, 60vw, 900px)', height: 'clamp(300px, 45vw, 700px)',
-                        background: 'radial-gradient(ellipse at 50% 50%, rgba(20,184,166,0.12) 0%, transparent 65%)',
+                        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+                        width: 'clamp(600px, 80vw, 1200px)', height: 'clamp(300px, 50vw, 700px)',
+                        background: 'radial-gradient(ellipse at 50% 0%, rgba(13,148,136,0.09) 0%, transparent 70%)',
                         pointerEvents: 'none',
                     }}
                 />
 
-                <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0' }}>
-                    {/* Logo */}
+                {/* ── Hero headline block ── */}
+                <div style={{
+                    position: 'relative', zIndex: 1,
+                    maxWidth: '1200px', margin: '0 auto',
+                    padding: 'clamp(72px, 10vw, 112px) clamp(24px, 6vw, 80px) clamp(56px, 7vw, 80px)',
+                    textAlign: 'center',
+                }}>
+                    {/* Eyebrow */}
+                    <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '10px',
+                        fontFamily: 'var(--font-body)', fontSize: '0.68rem', fontWeight: 700,
+                        letterSpacing: '0.22em', textTransform: 'uppercase', color: '#0d9488',
+                        marginBottom: '32px',
+                    }}>
+                        <span style={{ width: '20px', height: '1.5px', background: '#0d9488', display: 'inline-block' }} />
+                        Signal Intelligence Platform
+                        <span style={{ width: '20px', height: '1.5px', background: '#0d9488', display: 'inline-block' }} />
+                    </div>
+
+                    {/* Main headline */}
+                    <h2 style={{
+                        fontFamily: 'var(--font-display)',
+                        fontWeight: 800,
+                        fontSize: 'clamp(3rem, 7vw, 6.5rem)',
+                        letterSpacing: '-0.05em',
+                        lineHeight: 0.95,
+                        color: '#111111',
+                        margin: '0 0 28px',
+                    }}>
+                        See the world<br />
+                        <span style={{ color: '#0d9488' }}>more clearly.</span>
+                    </h2>
+
+                    {/* Sub-copy */}
+                    <p style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: 'clamp(0.95rem, 1.4vw, 1.15rem)',
+                        color: '#777777',
+                        maxWidth: '560px',
+                        margin: '0 auto 0',
+                        lineHeight: 1.65,
+                        letterSpacing: '-0.01em',
+                    }}>
+                        Physical AI that reads 140+ real-world signals in under a second —
+                        purpose-built for industries where timing is everything.
+                    </p>
+                </div>
+
+                {/* ── Two-column CTA block ── */}
+                <div style={{
+                    position: 'relative', zIndex: 1,
+                    maxWidth: '1200px', margin: '0 auto',
+                    padding: '0 clamp(24px, 6vw, 80px) clamp(72px, 10vw, 112px)',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: 'clamp(48px, 7vw, 100px)',
+                    alignItems: 'start',
+                }}>
+                    {/* Left — newsletter pitch */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <h3 style={{
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 700,
+                            fontSize: 'clamp(1.6rem, 2.5vw, 2.2rem)',
+                            letterSpacing: '-0.04em',
+                            lineHeight: 1.15,
+                            color: '#111',
+                            margin: '0 0 16px',
+                        }}>
+                            Be first to know.
+                        </h3>
+                        <p style={{
+                            fontFamily: 'var(--font-body)',
+                            fontSize: 'clamp(0.88rem, 1.1vw, 0.98rem)',
+                            color: '#666',
+                            lineHeight: 1.7,
+                            margin: '0 0 32px',
+                            maxWidth: '380px',
+                        }}>
+                            Get exclusive insights on physical AI, real-world signal intelligence,
+                            and early access to new capabilities as we build the future of
+                            location-aware decision making.
+                        </p>
+                        {/* Trust badges */}
+                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                            {['No spam', 'Cancel anytime', 'Early access'].map(b => (
+                                <span key={b} style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                    fontFamily: 'var(--font-body)', fontSize: '0.75rem',
+                                    fontWeight: 600, color: '#999', letterSpacing: '0.01em',
+                                }}>
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                        <circle cx="6" cy="6" r="5.5" stroke="#0d9488" strokeWidth="1" />
+                                        <path d="M3.5 6l1.8 1.8L8.5 4.5" stroke="#0d9488" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                    {b}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Right — form + demo CTA */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* HubSpot newsletter form (firstname, lastname, email) */}
+                        <NewsletterForm />
+
+                        {/* Divider */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.08)' }} />
+                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', color: '#bbb', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
+                            <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.08)' }} />
+                        </div>
+
+                        {/* View Demo — properly sized, not oversized */}
+                        <a
+                            href="https://retail-agent.alchemy-propheus.ai/explorer/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                gap: '12px',
+                                background: 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)',
+                                color: '#fff',
+                                textDecoration: 'none',
+                                borderRadius: '12px',
+                                padding: '16px 20px',
+                                fontFamily: 'var(--font-body)',
+                                boxShadow: '0 4px 20px rgba(13,148,136,0.28)',
+                                transition: 'box-shadow 0.2s, transform 0.2s',
+                            }}
+                        >
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', opacity: 0.75 }}>Live product</span>
+                                <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em' }}>View Live Demo →</span>
+                            </div>
+                            <div style={{
+                                width: '40px', height: '40px', borderRadius: '10px',
+                                background: 'rgba(255,255,255,0.15)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                flexShrink: 0,
+                            }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none" />
+                                </svg>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                {/* ── Footer bar ── */}
+                <div style={{
+                    position: 'relative', zIndex: 1,
+                    borderTop: '1px solid rgba(0,0,0,0.07)',
+                    padding: 'clamp(20px, 3vw, 28px) clamp(24px, 6vw, 80px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    flexWrap: 'wrap',
+                }}>
                     <Image
                         src="/logo.avif"
                         alt="Propheus"
-                        width={120}
-                        height={40}
-                        style={{ objectFit: 'contain', marginBottom: '48px', opacity: 0.9 }}
-                        priority
+                        width={72}
+                        height={24}
+                        style={{ objectFit: 'contain', objectPosition: 'left', opacity: 0.5 }}
                     />
-
-                    {/* Headline */}
-                    <h2
-                        style={{
-                            fontFamily: 'var(--font-display)',
-                            fontWeight: 800,
-                            fontSize: 'clamp(2.8rem, 6.5vw, 6rem)',
-                            letterSpacing: '-0.045em',
-                            lineHeight: 1.0,
-                            color: 'rgba(255,255,255,0.95)',
-                            margin: 0,
-                            maxWidth: '820px',
-                        }}
-                    >
-                        Ready to see the
-                        <br />
-                        <span style={{ color: '#14b8a6' }}>future of retail?</span>
-                    </h2>
-
-                    <p
-                        style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: 'clamp(0.95rem, 1.4vw, 1.15rem)',
-                            color: 'rgba(255,255,255,0.28)',
-                            marginTop: '20px',
-                            marginBottom: '52px',
-                            letterSpacing: '-0.01em',
-                            lineHeight: 1.65,
-                            maxWidth: '460px',
-                        }}
-                    >
-                        Propheus gives your team the signal intelligence to act before the moment passes.
-                    </p>
-
-                    {/* CTA Button */}
-                    <HoverBorderGradient
-                        as="a"
-                        href="https://retail-agent.alchemy-propheus.ai/explorer/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        containerClassName="rounded-full"
-                        className="text-white flex items-center gap-3 text-[0.95rem] font-semibold tracking-wide px-7 py-3.5"
-                        duration={1.4}
-                    >
-                        View Demo
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </HoverBorderGradient>
-
-                    {/* Divider */}
-                    <div style={{ width: '1px', height: '80px', background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.08), transparent)', margin: '72px 0 32px' }} />
-
-                    {/* Copyright */}
-                    <p
-                        style={{
-                            fontFamily: 'var(--font-body)',
-                            fontSize: '0.75rem',
-                            color: 'rgba(255,255,255,0.18)',
-                            letterSpacing: '0.06em',
-                            textTransform: 'uppercase',
-                            margin: 0,
-                        }}
-                    >
+                    <p style={{
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.72rem',
+                        color: '#aaaaaa',
+                        letterSpacing: '0.04em',
+                        margin: 0,
+                    }}>
                         &copy; 2026 Propheus &mdash; Signal Intelligence Platform
                     </p>
                 </div>

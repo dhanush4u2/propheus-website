@@ -1,142 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { PropheusExperience } from '@/lib/PropheusExperience';
+import ActivateAgent from '@/components/ActivateAgent';
+import { CloudCluster } from '@/components/CloudCluster';
 import WeatherWidget from '@/components/ui/WeatherWidget';
-import SentimentPieChart from '@/components/ui/SentimentPieChart';
-import ThoughtBubble from '@/components/ui/ThoughtBubble';
-import TrafficFlowChart from '@/components/ui/TrafficFlowChart';
+import UrbanizationWidget from '@/components/ui/Urbanization';
+import { EventsCompetitorSentimentWidget } from '@/components/ui/MarketIntelligence';
+import VegetationWidget from '@/components/ui/VegetationWidget';
+import CensusWidget from '@/components/ui/CensusWidget';
 import FootfallCard from '@/components/ui/FootfallCard';
-import PlacesCard from '@/components/ui/PlacesCard';
-import CompetitorCard from '@/components/ui/CompetitorCard';
-import PromoWatchCard from '@/components/ui/PromoWatchCard';
-import RotatingText from '@/components/ui/RotatingText';
+import { ParkingAnalyticsCard } from '@/components/ui/Parking Analytisc';
 import StoreMapMarkers from '@/components/ui/StoreMapMarkers';
 import DemographicsWidgetOverlay from '@/components/ui/DemographicsWidget';
-
-const DRIVING_WORDS = ['INVENTORY', 'STAFFING', 'PROMOTION', 'ASSORTMENT'];
-
-// Inlined here to avoid Next.js client-manifest cross-directory import issues
-function DrivingDecisionsOverlay() {
-    const [visible, setVisible] = useState(false);
-
-    useEffect(() => {
-        const show = () => setVisible(true);
-        const hide = () => setVisible(false);
-        window.addEventListener('propheus:state6', show);
-        window.addEventListener('propheus:state6:exit', hide);
-        return () => {
-            window.removeEventListener('propheus:state6', show);
-            window.removeEventListener('propheus:state6:exit', hide);
-        };
-    }, []);
-
-    return (
-        <div
-            style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pointerEvents: 'none',
-                zIndex: 10,
-                opacity: visible ? 1 : 0,
-                transform: visible ? 'translateY(0px)' : 'translateY(40px)',
-                transition: 'opacity 1.2s cubic-bezier(0.22,1,0.36,1), transform 1.2s cubic-bezier(0.22,1,0.36,1)',
-            }}
-        >
-            <div
-                style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    flexWrap: 'nowrap',
-                    gap: 'clamp(12px, 2vw, 28px)',
-                    justifyContent: 'center',
-                    filter: 'drop-shadow(0 12px 40px rgba(0,0,0,0.65))',
-                }}
-            >
-                <span
-                    style={{
-                        fontFamily: 'var(--font-heading)',
-                        fontWeight: 700,
-                        fontSize: 'clamp(2rem, 5.5vw, 5.5rem)',
-                        letterSpacing: '-0.04em',
-                        lineHeight: 1,
-                        color: '#ffffff',
-                        userSelect: 'none',
-                        textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.4)',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    Signal→
-                </span>
-
-                <div
-                    className="driving-pill"
-                    style={{
-                        fontFamily: 'var(--font-heading)',
-                        fontWeight: 700,
-                        fontSize: 'clamp(2rem, 5.5vw, 5.5rem)',
-                        letterSpacing: '-0.04em',
-                        lineHeight: 1,
-                        padding: '0.08em 0.32em 0.12em',
-                        borderRadius: '0.22em',
-                        userSelect: 'none',
-                        flexShrink: 0,
-                        pointerEvents: 'none',
-                        width: '7em',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        overflow: 'hidden',
-                    }}
-                >
-                    <RotatingText
-                        texts={DRIVING_WORDS}
-                        splitBy="characters"
-                        staggerFrom="last"
-                        staggerDuration={0.025}
-                        rotationInterval={2200}
-                        initial={{ y: '100%' }}
-                        animate={{ y: 0 }}
-                        exit={{ y: '-120%' }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-                        animatePresenceMode="wait"
-                        splitLevelClassName="overflow-hidden"
-                        style={{
-                            fontFamily: 'inherit',
-                            fontWeight: 'inherit',
-                            fontSize: 'inherit',
-                            letterSpacing: 'inherit',
-                            lineHeight: 'inherit',
-                            color: '#ffffff',
-                            userSelect: 'none',
-                            pointerEvents: 'none',
-                        }}
-                    />
-                </div>
-
-                <span
-                    style={{
-                        fontFamily: 'var(--font-heading)',
-                        fontWeight: 700,
-                        fontSize: 'clamp(2rem, 5.5vw, 5.5rem)',
-                        letterSpacing: '-0.04em',
-                        lineHeight: 1,
-                        color: '#ffffff',
-                        userSelect: 'none',
-                        textShadow: '0 2px 20px rgba(0,0,0,0.8), 0 0 60px rgba(0,0,0,0.4)',
-                        whiteSpace: 'nowrap',
-                    }}
-                >
-                    Decisions
-                </span>
-            </div>
-        </div>
-    );
-}
+import LenisTextReveal from '@/components/ui/LenisTextReveal';
 
 export default function HeroExperience() {
     const heroRef = useRef<HTMLElement>(null);
@@ -178,45 +55,46 @@ export default function HeroExperience() {
                     {/* Foreground frame canvas */}
                     <canvas id="main-canvas" ref={mainCanvasRef} aria-hidden="true" />
 
-                    {/* ============================
-                        SEGMENT 0 — "Goodbye to Dashboards"
-                        Frame 0 → 61 — cinematic intro text
-                       ============================ */}
-                    <div className="segment-layer" aria-hidden="true">
-                        {/* ThoughtBubble owns enter animations; GSAP owns the
-                            parent opacity: fade-in at segment0, fade-out at segment1,
-                            and fade back in when scrolling back to frame 0. */}
-                        <div className="seg0-text">
-                            <ThoughtBubble />
+                    {/* Clouds layer — above canvas (z-1), below segment pointers (z-3) */}
+                    <div className="hero-clouds-layer" aria-hidden="true">
+                        <div className="hero-clouds" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+                            <CloudCluster width={700} height={260} y="27%" speed={60} delay={-40} scale={1.1} seed={14} shadowX={25} shadowY={35} zIndex={1} opacity={0.7} />
+                            <CloudCluster width={400} height={250} y="50%" speed={50} delay={-4} scale={1.3} seed={42} shadowX={20} shadowY={30} zIndex={1} opacity={0.6} />
+                            <CloudCluster width={900} height={280} y="65%" speed={55} delay={-8} scale={0.9} seed={88} shadowX={15} shadowY={20} zIndex={1} opacity={0.45} />
                         </div>
                     </div>
 
                     {/* ============================
-                        SEGMENT 1 — Physical World
-                        Frame 61 → 90 — Headline + Topo + Weather
+                        STATE 0 — Headline + Navbar visible (instant)
+                       ============================ */}
+                    {/* ============================
+                        STATE 1 — Physical World (hold frame 0)
+                        Topo + Weather + StoreMapMarkers + Demographics come in
                        ============================ */}
                     <div className="segment-layer" aria-hidden="true">
-                        {/* Store map markers — ambient city data layer.
-                            Activated by propheus:state2 event; renders behind
-                            the headline and signal pointer panels (z-index: 0). */}
                         <StoreMapMarkers />
 
                         <h1 className="seg1-headline">
-                            <span className="seg1-line seg1-line-1">what if the Physical World</span>
+                            <span className="seg1-line seg1-line-1">The Physical World</span>
                             <span className="seg1-line seg1-line-2">
-                                was my <span className="seg1-hero-word">Playground?</span>
+                                is your <span className="seg1-hero-word">Playground</span>
                             </span>
                         </h1>
 
-                        {/* Places pointer — bottom-left anchored */}
-                        <div className="signal-pointer signal-pointer--up sp-topo">
-                            <div className="signal-dot sp-topo-dot" />
-                            <div className="signal-line sp-topo-line" />
-                            <div className="sp-topo-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
-                                <div className="signal-content sp-topo-content">
-                                    <PlacesCard />
+                        {/* Vegetation widget — signal-pointer--up so dot sits below, line draws up to the widget */}
+                        <div className="signal-pointer signal-pointer--up sp-vegetation">
+                            <div className="signal-dot sp-vegetation-dot" />
+                            <div className="signal-line sp-vegetation-line" />
+                            <div className="sp-vegetation-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
+                                <div className="signal-content sp-vegetation-content">
+                                    <VegetationWidget />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Census widget — bottom-right intelligence panel, self-managed visibility */}
+                        <div style={{ position: 'absolute', bottom: '4%', right: '8%', zIndex: 3, pointerEvents: 'none' }}>
+                            <CensusWidget />
                         </div>
 
                         {/* Demographics — bottom-center, fade-up with state2 */}
@@ -235,60 +113,34 @@ export default function HeroExperience() {
                     </div>
 
                     {/* ============================
-                        SEGMENT 2 — Intelligence Layer
-                        Frame 90 → 120 — Sentiment + Competitor + Promo Watch
+                        STATE 2 — Intelligence Layer
+                        Urbanization (top-right, own arc) + Market Intelligence (left, horizontal pointer)
                        ============================ */}
                     <div className="segment-layer" aria-hidden="true">
-                        {/* Sentiment donut pointer */}
-                        <div className="signal-pointer signal-pointer--down sp-sentiment">
-                            <div className="signal-dot sp-sentiment-dot" />
-                            <div className="signal-line sp-sentiment-line" />
-                            <div className="sp-sentiment-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
-                                <div className="signal-content sp-sentiment-content">
-                                    <SentimentPieChart />
-                                </div>
-                            </div>
+                        {/* Urbanization widget — top-right, no signal pointer (own visual arc) */}
+                        <div className="urb-widget-container" aria-hidden="true">
+                            <UrbanizationWidget />
                         </div>
 
-                        {/* Competitor signal pointer */}
-                        <div className="signal-pointer signal-pointer--down sp-competitor">
-                            <div className="signal-dot sp-competitor-dot" />
-                            <div className="signal-line sp-competitor-line" />
-                            <div className="sp-competitor-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
-                                <div className="signal-content sp-competitor-content">
-                                    <CompetitorCard />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Promo Watch pointer — right-side */}
-                        <div className="signal-pointer signal-pointer--down sp-promo">
-                            <div className="signal-dot sp-promo-dot" />
-                            <div className="signal-line sp-promo-line" />
-                            <div className="sp-promo-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
-                                <div className="signal-content sp-promo-content">
-                                    <PromoWatchCard />
+                        {/* Market Intelligence — card on left, dot to the right of the card */}
+                        <div className="signal-pointer signal-pointer--left sp-marketintel">
+                            <div className="signal-dot sp-marketintel-dot" />
+                            <div className="signal-line sp-marketintel-line" />
+                            <div className="sp-marketintel-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
+                                <div className="signal-content sp-marketintel-content">
+                                    <EventsCompetitorSentimentWidget />
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* ============================
-                        SEGMENT 3 — Traffic & Footfall
-                        Frame 120 → 146 — Traffic + Footfall
+                        STATE 3 — Footfall + Parking Analytics
+                        Frame 120 → 240 — signal pointers from bottom upward
                        ============================ */}
                     <div className="segment-layer" aria-hidden="true">
-                        <div className="signal-pointer signal-pointer--down sp-traffic">
-                            <div className="signal-dot sp-traffic-dot" />
-                            <div className="signal-line sp-traffic-line" />
-                            <div className="sp-traffic-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
-                                <div className="signal-content sp-traffic-content">
-                                    <TrafficFlowChart />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="signal-pointer signal-pointer--down sp-footfall">
+                        {/* Footfall — bottom-right, signal-pointer--up */}
+                        <div className="signal-pointer signal-pointer--up sp-footfall">
                             <div className="signal-dot sp-footfall-dot" />
                             <div className="signal-line sp-footfall-line" />
                             <div className="sp-footfall-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
@@ -297,16 +149,79 @@ export default function HeroExperience() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Parking Analytics — bottom-left, signal-pointer--up */}
+                        <div className="signal-pointer signal-pointer--up sp-parking">
+                            <div className="signal-dot sp-parking-dot" />
+                            <div className="signal-line sp-parking-line" />
+                            <div className="sp-parking-panel" style={{ background: 'none', border: 'none', padding: 0, backdropFilter: 'none', boxShadow: 'none' }}>
+                                <div className="signal-content sp-parking-content">
+                                    <ParkingAnalyticsCard />
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* ============================
-                        SEGMENT 4 — Digital Atlas Conclusion
-                        Frame 146 → 176 — Driving Decisions overlay
+                        STATE 4 — Pure Canvas Sweep
+                        Frame 240 → 360 — no UI components
                        ============================ */}
-                    <div className="segment-layer" aria-hidden="true">
-                        <DrivingDecisionsOverlay />
+                    {/* ============================
+                        STATE 5 — Lenis Scroll
+                        Frame 360 → 480 — canvas shrinks to 1:1 card,
+                        hero-to-page transition with content reveal
+                       ============================ */}
+
+                    {/* Lenis transition layer — behind canvas (z-2), above ambient (z-0) */}
+                    <div className="lenis-transition-layer">
+                        <div className="lenis-bg" />
+                        <div className="lenis-content">
+                            {/* Far-left column (outer — moves faster) */}
+                            <div className="parallax-col parallax-col-outer parallax-col-fl">
+                                <img className="parallax-img" src="/assets/examples/Store%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '5/6' }} />
+                                <img className="parallax-img" src="/assets/examples/telecom%20tower%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '4/5' }} />
+                                <img className="parallax-img" src="/assets/examples/satellite%20imagery%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '1/1' }} />
+                                <img className="parallax-img" src="/assets/examples/property.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '3/4' }} />
+                                <img className="parallax-img" src="/assets/examples/mines%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '5/7' }} />
+                            </div>
+                            {/* Inner-left column (inner — moves slower) */}
+                            <div className="parallax-col parallax-col-inner parallax-col-il">
+                                <img className="parallax-img" src="/assets/examples/streets.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '4/3' }} />
+                                <img className="parallax-img" src="/assets/examples/village.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '3/4' }} />
+                                <img className="parallax-img" src="/assets/examples/aerial%20view%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '5/4' }} />
+                                <img className="parallax-img" src="/assets/examples/forest%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '3/4' }} />
+                                <img className="parallax-img" src="/assets/examples/Road%20crossing.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '1/1' }} />
+                            </div>
+                            {/* Inner-right column (inner — moves slower) */}
+                            <div className="parallax-col parallax-col-inner parallax-col-ir">
+                                <img className="parallax-img" src="/assets/examples/Properties.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '3/4' }} />
+                                <img className="parallax-img" src="/assets/examples/aerial%20imagery.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '4/3' }} />
+                                <img className="parallax-img" src="/assets/examples/boardroom%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '3/4' }} />
+                                <img className="parallax-img" src="/assets/examples/Train%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '5/4' }} />
+                                <img className="parallax-img" src="/assets/examples/manufacturing.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(130px, 12vw, 195px)', aspectRatio: '4/5' }} />
+                            </div>
+                            {/* Far-right column (outer — moves faster) */}
+                            <div className="parallax-col parallax-col-outer parallax-col-fr">
+                                <img className="parallax-img" src="/assets/examples/transactions.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '1/1' }} />
+                                <img className="parallax-img" src="/assets/examples/nasa-_SFJhRPzJHs-unsplash.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '5/6' }} />
+                                <img className="parallax-img" src="/assets/examples/Delivery%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '4/5' }} />
+                                <img className="parallax-img" src="/assets/examples/road%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '3/4' }} />
+                                <img className="parallax-img" src="/assets/examples/warehouse%20.webp" alt="" loading="eager" decoding="async" style={{ width: 'clamp(95px, 9vw, 145px)', aspectRatio: '5/7' }} />
+                            </div>
+                            {/* Centre text block — word-level reveal driven by lenis progress */}
+                            <div className="lenis-text-block">
+                                <LenisTextReveal
+                                    heading="Physical Intelligence"
+                                    body="AI Agents for every industry obsessed with ACTING in the real world. Powered by real-world intelligence that gives you the most comprehensive knowledge representation of every place on earth, curated to your unique context. 
+"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {/* ActivateAgent — bottom-center hero controller */}
+                <ActivateAgent />
             </section>
         </>
     );

@@ -18,8 +18,8 @@ export function initSmoothScroll(): Lenis {
     if (instance) return instance;
 
     instance = new Lenis({
-        lerp: 0.1,
-        duration: 1.2,
+        lerp: 0.14,
+        duration: 1.0,
         smoothWheel: true,
     });
 

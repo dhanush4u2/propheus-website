@@ -35,6 +35,8 @@ export type AnimationPreset =
     | 'lineCollapse'
     | 'scaleYDraw'
     | 'scaleYCollapse'
+    | 'scaleXDraw'
+    | 'scaleXCollapse'
     | 'glowPulse'
     | 'countUp';
 
@@ -85,6 +87,8 @@ const PRESET_DEFAULTS: Record<AnimationPreset, gsap.TweenVars> = {
     lineCollapse: { opacity: 0, duration: 0.3, ease: 'power2.in' },
     scaleYDraw: { scaleY: 1, opacity: 1, duration: 0.5, ease: 'power2.out' },
     scaleYCollapse: { scaleY: 0, opacity: 0, duration: 0.3, ease: 'power2.in' },
+    scaleXDraw: { scaleX: 1, opacity: 1, duration: 0.5, ease: 'power2.out' },
+    scaleXCollapse: { scaleX: 0, opacity: 0, duration: 0.3, ease: 'power2.in' },
     glowPulse: { opacity: 1, scale: 1, duration: 0.4, ease: 'power2.out' },
     slideLeft: { x: -40, duration: 0.6, ease: 'power2.out' },
     slideRight: { x: 40, duration: 0.6, ease: 'power2.out' },
@@ -204,9 +208,44 @@ export class HeroAnimationController {
         });
     }
 
+    /** Animate all elements to their target state quickly (cosmetic skip).
+     *  Like applyInstant but with a brief animation to avoid visual snap. */
+    applyQuick(segmentKey: string, duration: number): void {
+        this.elements.forEach((entry) => {
+            const configs = entry.animations[segmentKey];
+            if (!configs || configs.length === 0) return;
+
+            configs.forEach((config) => {
+                if (config.type === 'countUp') return;
+
+                const vars = this.buildTweenVars(config);
+                const target = config.targetChildren
+                    ? Array.from(entry.el.children) as HTMLElement[]
+                    : entry.el;
+
+                // Override timing — fixed short duration, no delay/stagger
+                vars.duration = duration;
+                delete vars.delay;
+                delete vars.stagger;
+
+                gsap.to(target, vars);
+            });
+        });
+    }
+
     /** Get all registered element IDs */
     getAllRegisteredIds(): string[] {
         return Array.from(this.elements.keys());
+    }
+
+    /** Kill every GSAP tween running on any registered element.
+     *  Use as a safety net before starting new transitions. */
+    killAllTweens(): void {
+        this.elements.forEach((entry) => {
+            gsap.killTweensOf(entry.el);
+            // Also kill tweens on children (pointer sub-parts may be targeted directly)
+            Array.from(entry.el.children).forEach((child) => gsap.killTweensOf(child));
+        });
     }
 
     /** Get all registered element IDs matching a prefix */
