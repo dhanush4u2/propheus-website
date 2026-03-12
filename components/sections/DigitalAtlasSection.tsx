@@ -183,7 +183,7 @@ export default function DigitalAtlasSection() {
                                 boxShadow: '0 0 10px rgba(0,138,137,0.4)',
                             }}
                         />
-                        Location Intelligence
+                        Digtital Atlas
                     </span>
 
                     <h2

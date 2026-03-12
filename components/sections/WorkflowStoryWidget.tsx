@@ -77,15 +77,15 @@ const GlowCard = ({ children, className = '', isActive = false, dark = false }: 
     const cardRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        const el = cardRef.current;
+        if (!el) return;
         const syncPointer = (e: PointerEvent) => {
-            if (cardRef.current) {
-                const rect = cardRef.current.getBoundingClientRect();
-                cardRef.current.style.setProperty('--x', (e.clientX - rect.left).toFixed(2));
-                cardRef.current.style.setProperty('--y', (e.clientY - rect.top).toFixed(2));
-            }
+            const rect = el.getBoundingClientRect();
+            el.style.setProperty('--x', (e.clientX - rect.left).toFixed(2));
+            el.style.setProperty('--y', (e.clientY - rect.top).toFixed(2));
         };
-        document.addEventListener('pointermove', syncPointer);
-        return () => document.removeEventListener('pointermove', syncPointer);
+        el.addEventListener('pointermove', syncPointer);
+        return () => el.removeEventListener('pointermove', syncPointer);
     }, []);
 
     return (
@@ -285,6 +285,7 @@ const StatusBadge = ({ active, theme = 'teal', label }: { active: boolean; theme
 export default function WorkflowStoryWidget({ dark = false }: { dark?: boolean }) {
     const [stage, setStage] = useState(0);
     const rootRef = useRef<HTMLDivElement>(null);
+    const lastStageRef = useRef(0);
 
     // Scroll-linked stage progression â€” pinned while animating, driven by Lenis/ScrollTrigger
     // Uses a continuous scrubbable value for buttery scroll feel.
@@ -307,11 +308,11 @@ export default function WorkflowStoryWidget({ dark = false }: { dark?: boolean }
                 end: '+=600',
                 scrub: 0.4,
                 onUpdate(self) {
-                    const raw = self.progress * 9;
-                    setStage(prev => {
-                        const next = Math.round(raw);
-                        return next !== prev ? next : prev;
-                    });
+                    const next = Math.round(self.progress * 9);
+                    if (next !== lastStageRef.current) {
+                        lastStageRef.current = next;
+                        setStage(next);
+                    }
                 },
             },
         });

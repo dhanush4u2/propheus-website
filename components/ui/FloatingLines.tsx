@@ -350,6 +350,9 @@ export default function FloatingLines({
     const ro = new ResizeObserver(setSize);
     ro.observe(el);
 
+    // Pre-compile shader on mount so first visible render has no stall
+    renderer.compile(scene, camera);
+
     // Pause when off-screen
     const io = new IntersectionObserver(
       ([entry]) => {

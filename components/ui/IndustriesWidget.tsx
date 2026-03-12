@@ -21,7 +21,7 @@ const partnerships = [
   {
     id: 'retail',
     name: 'Retail',
-    image: '/assets/Industries/retail.webp',
+    image: '/assets/Industries/Retail.webp',
     quote: "Your stores are alive with signals most teams never see. Foot traffic patterns, live weather, what competitors are doing next door—right now. Retail Agent reads all of it and gives your managers something they can actually act on, before the floor feels it.",
     icon: Store,
     accent: '#2dd4bf'
@@ -29,7 +29,7 @@ const partnerships = [
   {
     id: 'cpg',
     name: 'CPG',
-    image: '/assets/Industries/cpg.webp',
+    image: '/assets/Industries/CPG.webp',
     quote: "Market size is a guess until you map it to the ground. We layer demand signals, place dynamics, and real-time sentiment onto your distribution footprint—so you see exactly where your product belongs, and what’s quietly stopping it from getting there.",
     icon: ShoppingCart,
     accent: '#3b82f6'
@@ -37,7 +37,7 @@ const partnerships = [
   {
     id: 'travel',
     name: 'Travel',
-    image: '/assets/Industries/travel.webp',
+    image: '/assets/Industries/Travel.webp',
     quote: "Use live context - crowds, events, weather, transit and venue status, and local price movements - to power physical observability, personalize discovery and recommendations, and drive dynamic pricing and smart bundling across flights, stays, and experiences.",
     icon: Plane,
     accent: '#818cf8'
@@ -45,7 +45,7 @@ const partnerships = [
   {
     id: 'o2o',
     name: 'O2O',
-    image: '/assets/Industries/o2o.webp',
+    image: '/assets/Industries/O2O.webp',
     quote: "Harness live context - people movement, events, weather, traffic, and supply - to power physical observability, tune dynamic pricing, sharpen demand planning, and localize product assortment across your O2O pickup, delivery, and ride zones.",
     icon: Smartphone,
     accent: '#2dd4bf'

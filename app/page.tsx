@@ -174,52 +174,6 @@ export default function Home() {
                         {/* HubSpot newsletter form (firstname, lastname, email) */}
                         <NewsletterForm dark />
 
-                        {/* Divider */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                            <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>or</span>
-                            <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                        </div>
-
-                        {/* View Demo */}
-                        <a
-                            href="https://retail-agent.alchemy-propheus.ai/explorer/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                gap: '12px',
-                                background: 'linear-gradient(135deg, rgba(41,255,201,0.12) 0%, rgba(13,148,136,0.18) 100%)',
-                                border: '1px solid rgba(41,255,201,0.2)',
-                                color: '#fff',
-                                textDecoration: 'none',
-                                borderRadius: '12px',
-                                padding: '16px 20px',
-                                fontFamily: 'var(--font-body)',
-                                boxShadow: '0 4px 24px rgba(41,255,201,0.08)',
-                                transition: 'box-shadow 0.25s, border-color 0.25s, transform 0.2s',
-                            }}
-                            className="footer-demo-link"
-                        >
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                <span style={{ fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#29ffc9', opacity: 0.85 }}>Live product</span>
-                                <span style={{ fontSize: '1rem', fontWeight: 700, letterSpacing: '-0.02em' }}>View Live Demo →</span>
-                            </div>
-                            <div style={{
-                                width: '40px', height: '40px', borderRadius: '10px',
-                                background: 'rgba(41,255,201,0.1)',
-                                border: '1px solid rgba(41,255,201,0.15)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                flexShrink: 0,
-                            }}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none" />
-                                </svg>
-                            </div>
-                        </a>
-
                         {/* Request Your Report
                         <a
                             href="/book-demo?tab=report"

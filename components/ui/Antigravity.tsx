@@ -62,6 +62,19 @@ function AntigravityInner({
     const lastMousePos = useRef({ x: 0, y: 0 });
     const lastMouseMoveTime = useRef(0);
     const virtualMouse = useRef({ x: 0, y: 0 });
+    const visibleRef = useRef(false);
+
+    // Pause per-frame work when canvas is scrolled off-screen
+    useEffect(() => {
+        const el = gl.domElement;
+        if (!el) return;
+        const io = new IntersectionObserver(
+            ([entry]) => { visibleRef.current = entry.isIntersecting; },
+            { threshold: 0 },
+        );
+        io.observe(el);
+        return () => io.disconnect();
+    }, [gl.domElement]);
 
     useEffect(() => {
         const canvas = gl.domElement;
@@ -106,6 +119,7 @@ function AntigravityInner({
     }, [count, viewport.width, viewport.height]);
 
     useFrame(state => {
+        if (!visibleRef.current) return;
         const mesh = meshRef.current;
         if (!mesh) return;
 

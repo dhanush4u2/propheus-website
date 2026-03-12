@@ -38,7 +38,33 @@ export default function HeroExperience() {
             loadingBar,
         });
 
+        // Deep-link: if URL has a section hash (e.g. /#digital-atlas), skip the
+        // hero state machine after images load and scroll straight to that section.
+        const hash = window.location.hash.replace('#', '');
+        let deepLinkHandler: (() => void) | null = null;
+        if (hash) {
+            deepLinkHandler = () => {
+                window.removeEventListener('propheus:load-complete', deepLinkHandler!);
+                deepLinkHandler = null;
+                // Wait for the preloader dismiss animation to fully finish:
+                // 550ms spring settle + 1100ms slide-out + 100ms buffer = 1750ms
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('propheus:force-exit'));
+                    requestAnimationFrame(() => {
+                        const target = document.getElementById(hash);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'instant' });
+                        }
+                        // Clear the hash so refreshing starts fresh
+                        window.history.replaceState(null, '', window.location.pathname);
+                    });
+                }, 1750);
+            };
+            window.addEventListener('propheus:load-complete', deepLinkHandler);
+        }
+
         return () => {
+            if (deepLinkHandler) window.removeEventListener('propheus:load-complete', deepLinkHandler);
             experience.destroy();
         };
     }, []);

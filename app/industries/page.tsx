@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Antigravity from '@/components/ui/Antigravity';
 import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
     MapPin, Cloud, Users, Zap, TrendingUp,
     BarChart2, Calendar, ShoppingBag, ArrowRight, ChevronDown, ChevronUp,
@@ -13,8 +12,6 @@ import {
 import WorkflowStoryWidget from '@/components/sections/WorkflowStoryWidget';
 import RotatingText from '@/components/ui/RotatingText';
 import FloatingLines from '@/components/ui/FloatingLines';
-
-gsap.registerPlugin(ScrollTrigger);
 
 /* ---------------------------------------------------------------
    TABS (id lookup only)
@@ -135,23 +132,22 @@ function useScrollReveal(panelKey: number | string) {
     useEffect(() => {
         const container = ref.current;
         if (!container) return;
-        const ctx = gsap.context(() => {
-            const els = container.querySelectorAll<HTMLElement>('.s-reveal');
-            els.forEach((el) => {
-                gsap.from(el, {
-                    opacity: 0,
-                    y: 64,
-                    duration: 1.1,
-                    ease: 'power3.out',
-                    scrollTrigger: {
-                        trigger: el,
-                        start: 'top 88%',
-                        once: true,
-                    },
+
+        const els = container.querySelectorAll<HTMLElement>('.s-reveal');
+        // Use IntersectionObserver instead of GSAP ScrollTrigger for lighter reveals
+        const io = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        (entry.target as HTMLElement).classList.add('s-visible');
+                        io.unobserve(entry.target);
+                    }
                 });
-            });
-        }, container);
-        return () => ctx.revert();
+            },
+            { threshold: 0.08 },
+        );
+        els.forEach((el) => io.observe(el));
+        return () => io.disconnect();
     }, [panelKey]);
     return ref;
 }
@@ -196,12 +192,12 @@ function DrivingDecisionsBanner({ compact = false }: { compact?: boolean }) {
                     style={{
                         fontFamily: 'var(--font-display)',
                         fontWeight: 700,
-                        fontSize: 'clamp(0.67rem, 1.0vw, 0.8rem)',
+                        fontSize: 'clamp(0.87rem, 1.3vw, 1.04rem)',
                         letterSpacing: '0.13em',
                         lineHeight: 1,
                         color: '#ffffff',
                         background: '#008a89',
-                        padding: '6px 12px 7px',
+                        padding: '8px 16px 9px',
                         borderRadius: '3px',
                         overflow: 'hidden',
                         userSelect: 'none' as const,
@@ -209,7 +205,7 @@ function DrivingDecisionsBanner({ compact = false }: { compact?: boolean }) {
                         pointerEvents: 'none',
                         display: 'inline-flex',
                         justifyContent: 'center',
-                        width: '10.6em',
+                        width: '13.8em',
                         flexShrink: 0,
                         textTransform: 'uppercase' as const,
                     }}
@@ -221,7 +217,7 @@ function DrivingDecisionsBanner({ compact = false }: { compact?: boolean }) {
     }
 
     return (
-        <div ref={ref} className="rt-driving-banner">
+        <div ref={ref} className="rt-driving-banner" data-navbar-dark>
             <div className="rt-driving-glow" aria-hidden="true" />
             <div
                 className="rt-driving-content"
@@ -279,7 +275,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
             <div style={{ position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.55 }} aria-hidden="true">
                     <Antigravity
-                        count={300}
+                        count={120}
                         magnetRadius={6}
                         ringRadius={7}
                         waveSpeed={0.4}
@@ -334,7 +330,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
             </div>
 
             {/* -- 2. How it works -- */}
-            <div className="rt-how s-reveal">
+            <div className="rt-how s-reveal" data-navbar-dark>
                 <div className="rt-how-inner">
                     <div className="rt-section-label">
                         <span className="rt-sl-line" />
@@ -354,7 +350,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
             </div>
 
             {/* -- 3b. Workflow widget (dark) -- */}
-            <div className="rt-workflow-section s-reveal">
+            <div className="rt-workflow-section s-reveal" data-navbar-dark>
                 <div className="rt-workflow-inner">
                     <div className="rt-section-label" style={{ color: 'rgba(255,255,255,0.35)' }}>
                         <span className="rt-sl-line" style={{ background: 'rgba(255,255,255,0.2)' }} />
@@ -371,7 +367,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
             {/* -- 3c. Driving decisions � now inline in hero -- */}
 
             {/* -- 4. Weekly plan -- */}
-            <div className="rt-plan s-reveal">
+            <div className="rt-plan s-reveal" data-navbar-dark>
                 <div className="rt-plan-inner">
                     <div className="rt-plan-left">
                         <div className="rt-section-label" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -402,6 +398,9 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                                 <span className="rt-plan-store-count">5 actions</span>
                             </div>
                         </div>
+                        <Link href="/book-demo?tab=report" className="rt-plan-report-cta">
+                            Request Your Store Report <ArrowRight size={13} strokeWidth={2.5} />
+                        </Link>
                     </div>
 
                     <div className="rt-plan-right">
@@ -427,17 +426,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                 </div>
             </div>
 
-            {/* -- 6. Quote -- */}
-            <div className="rt-quote s-reveal">
-                <div className="rt-quote-inner">
-                    <div className="rt-quote-deco" aria-hidden="true">&ldquo;</div>
-                    <blockquote className="rt-quote-text">
-                        Your stores are alive with signals most teams never see. Foot traffic patterns,
-                        live weather, what competitors are doing next door right now. Retail Agent reads
-                        all of it and gives your managers something they can actually act on.
-                    </blockquote>
-                </div>
-            </div>
+
 
 
         </div>
@@ -644,21 +633,6 @@ function OtherPanel({ industry, panelKey }: { industry: OtherIndustry; panelKey:
                 </div>
             </div>
 
-            <div className="ot-stats s-reveal">
-                {stats.map((s, i) => (
-                    <div key={i} className="ot-stat">
-                        <div className="ot-stat-n" style={{ color: accent }}>
-                            <Counter to={s.n} suffix={s.suffix} />
-                        </div>
-                        <div className="ot-stat-d">{s.desc}</div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="ot-quote s-reveal">
-                <blockquote className="ot-quote-text">{quote}</blockquote>
-            </div>
-
 
         </div>
     );
@@ -674,7 +648,7 @@ function CPGPanel({ panelKey }: { panelKey: number }) {
     return (
         <div className="cpg-root" ref={panelRef}>
             {/* Hero: dark editorial with distribution network SVG */}
-            <div className="cpg-hero s-reveal">
+            <div className="cpg-hero s-reveal" data-navbar-dark>
                 <div className="cpg-hero-inner">
                     <div className="cpg-eyebrow">
                         <span className="cpg-ey-dot" />
@@ -742,21 +716,6 @@ function CPGPanel({ panelKey }: { panelKey: number }) {
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="cpg-stats s-reveal">
-                {stats.map((s, i) => (
-                    <div key={i} className="cpg-stat">
-                        <div className="cpg-stat-n"><Counter to={s.n} suffix={s.suffix} /></div>
-                        <div className="cpg-stat-d">{s.desc}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Quote */}
-            <div className="cpg-quote s-reveal">
-                <div className="cpg-quote-bar" />
-                <blockquote className="cpg-quote-text">{quote}</blockquote>
-            </div>
 
         </div>
     );
@@ -797,7 +756,7 @@ function TravelPanel({ panelKey }: { panelKey: number }) {
             </div>
 
             {/* Hero: very dark with pricing window bar chart */}
-            <div className="tv-hero s-reveal">
+            <div className="tv-hero s-reveal" data-navbar-dark>
                 <div className="tv-hero-inner">
                     <div className="tv-eyebrow">
                         <span className="tv-ey-dot" />
@@ -857,20 +816,6 @@ function TravelPanel({ panelKey }: { panelKey: number }) {
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="tv-stats s-reveal">
-                {stats.map((s, i) => (
-                    <div key={i} className="tv-stat">
-                        <div className="tv-stat-n"><Counter to={s.n} suffix={s.suffix} /></div>
-                        <div className="tv-stat-d">{s.desc}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Quote */}
-            <div className="tv-quote s-reveal">
-                <blockquote className="tv-quote-text">{quote}</blockquote>
-            </div>
 
         </div>
     );
@@ -950,20 +895,6 @@ function O2OPanel({ panelKey }: { panelKey: number }) {
                 </div>
             </div>
 
-            {/* Stats */}
-            <div className="o2o-stats s-reveal">
-                {stats.map((s, i) => (
-                    <div key={i} className="o2o-stat">
-                        <div className="o2o-stat-n"><Counter to={s.n} suffix={s.suffix} /></div>
-                        <div className="o2o-stat-d">{s.desc}</div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Quote */}
-            <div className="o2o-quote s-reveal">
-                <blockquote className="o2o-quote-text">{quote}</blockquote>
-            </div>
 
         </div>
     );
@@ -976,6 +907,17 @@ function O2OPanel({ panelKey }: { panelKey: number }) {
 export default function IndustriesPage() {
     const [activeTab, setActiveTab] = useState(0);
     const [showScrollTop, setShowScrollTop] = useState(false);
+
+    const FOOTER_COPY = [
+        { name: 'Retail',      tagline: "The agent that reads your store's world and tells your managers what to do about it.", showReport: true },
+        { name: 'CPG',         tagline: 'The agent that maps demand to the ground and tells your field teams where to act.', showReport: false },
+        { name: 'O2O',         tagline: 'The agent that reads every zone and tells your operators what to do next.', showReport: false },
+        { name: 'Travel',      tagline: 'The agent that tracks every revenue window and tells your teams when to act.', showReport: false },
+        { name: 'FinTech',     tagline: 'The agent that enriches every transaction with real-world intelligence.', showReport: false },
+        { name: 'Real Estate', tagline: 'The agent that scores every location with 150+ real-world signals.', showReport: false },
+        { name: 'Telecom',     tagline: 'The agent that maps demand hotspots and orchestrates outbound campaigns.', showReport: false },
+    ];
+    const footerCopy = FOOTER_COPY[activeTab] ?? FOOTER_COPY[0];
     const heroHeadRef = useRef<HTMLHeadingElement>(null);
     const heroBadgeRef = useRef<HTMLDivElement>(null);
     const heroSubRef   = useRef<HTMLParagraphElement>(null);
@@ -1052,7 +994,7 @@ export default function IndustriesPage() {
                 <section className="ind2-hero">
                     <div className="ind2-ag" aria-hidden="true">
                         <Antigravity
-                            count={300}
+                            count={120}
                             magnetRadius={6}
                             ringRadius={7}
                             waveSpeed={0.4}
@@ -1124,7 +1066,7 @@ export default function IndustriesPage() {
                 </div>
 
                 {/* FOOTER */}
-                <footer className="ind2-footer">
+                <footer className="ind2-footer" data-navbar-dark>
                     {/* FloatingLines — interactive, pointer events enabled so mouse moves animate lines */}
                     <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
                         <FloatingLines
@@ -1134,8 +1076,8 @@ export default function IndustriesPage() {
                             lineDistance={22.5}
                             bendRadius={5}
                             bendStrength={-1}
-                            interactive={true}
-                            parallax={true}
+                            interactive={false}
+                            parallax={false}
                             mixBlendMode="screen"
                         />
                     </div>
@@ -1146,11 +1088,13 @@ export default function IndustriesPage() {
                             <span className="ind2-footer-dot" />
                             Propheus
                         </p>
-                        <h2 className="ind2-footer-h2">Hire your<br /><span style={{ color: '#1cd2b3' }}>Retail AI Agent.</span></h2>
-                        <p className="ind2-footer-tagline">The agent that reads your store’s world and tells your managers what to do about it.</p>
+                        <h2 className="ind2-footer-h2">Hire your<br /><span style={{ color: '#1cd2b3' }}>{footerCopy.name} AI Agent.</span></h2>
+                        <p className="ind2-footer-tagline">{footerCopy.tagline}</p>
                         <div className="ind2-footer-cta-btns">
                             <Link href="/book-demo" className="ind2-footer-cta-primary">Hire the Agent →</Link>
-                            <Link href="/book-demo?tab=report" className="ind2-footer-cta-secondary">Request Your Report →</Link>
+                            {footerCopy.showReport && (
+                                <Link href="/book-demo?tab=report" className="ind2-footer-cta-secondary">Request Your Report →</Link>
+                            )}
                         </div>
                     </div>
 
@@ -1189,6 +1133,20 @@ export default function IndustriesPage() {
    INDUSTRIES v2 � Tab-first, Apple-grade editorial
    Prefix: ind2- | rt- (retail) | ot- (other)
 -------------------------------------------------------------- */
+
+/* Scroll-reveal: CSS-driven for GPU compositing */
+.s-reveal {
+    opacity: 0;
+    transform: translateY(48px);
+    transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+                transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+}
+.s-visible {
+    opacity: 1;
+    transform: translateY(0);
+    will-change: auto;
+}
 
 .ind2-root {
     background: #ffffff;
@@ -1594,7 +1552,6 @@ export default function IndustriesPage() {
 /* Workflow Widget Section */
 .rt-workflow-section {
     background: #080808;
-    border-top: 1px solid rgba(255,255,255,0.05);
     border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .rt-workflow-inner {
@@ -1626,11 +1583,11 @@ export default function IndustriesPage() {
 .rt-driving-inline {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 13px;
     width: 100%;
     margin: 0;
-    padding: 18px 22px;
+    padding: 23px 29px;
     background: #f5f5f7;
     border-radius: 10px;
     border: 1px solid #e5e5e7;
@@ -1638,7 +1595,7 @@ export default function IndustriesPage() {
 }
 .rt-di-word {
     font-family: var(--font-display, 'Syne', sans-serif);
-    font-size: clamp(0.7rem, 1.06vw, 0.84rem);
+    font-size: clamp(0.91rem, 1.38vw, 1.09rem);
     font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
@@ -1709,6 +1666,8 @@ export default function IndustriesPage() {
 .rt-plan-store-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: rgba(255,255,255,.55); }
 .rt-plan-store-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .rt-plan-store-count { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.25); }
+.rt-plan-report-cta { display: inline-flex; align-items: center; gap: 6px; margin-top: 22px; padding: 10px 18px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em; color: rgba(255,255,255,0.65); text-decoration: none; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.rt-plan-report-cta:hover { background: rgba(0,138,137,0.18); border-color: rgba(0,194,195,0.35); color: #2dd4bf; }
 
 .rt-plan-card { background: #161618; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; overflow: hidden; }
 .rt-plan-card-head {
@@ -1746,21 +1705,6 @@ export default function IndustriesPage() {
 .rt-stat-d { font-size: 12.5px; color: rgba(255,255,255,0.38); line-height: 1.55; max-width: 180px; margin: 0 auto; }
 
 /* Quote */
-.rt-quote { background: #080808; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.rt-quote-inner { max-width: 900px; margin: 0 auto; padding: clamp(52px, 7vw, 84px) clamp(32px, 8vw, 120px); position: relative; }
-.rt-quote-deco {
-    font-family: var(--font-heading, 'Playfair Display', serif);
-    font-size: clamp(4rem, 8vw, 7rem); color: rgba(255,255,255,.04); line-height: 0.5;
-    position: absolute; top: clamp(28px, 4vw, 50px); left: clamp(12px, 5vw, 80px);
-    pointer-events: none; user-select: none;
-}
-.rt-quote-text {
-    font-family: var(--font-heading, 'Playfair Display', serif);
-    font-size: clamp(1.05rem, 1.65vw, 1.42rem); font-weight: 500; font-style: italic;
-    line-height: 1.72; color: rgba(255,255,255,0.58); letter-spacing: -0.01em;
-    padding-left: clamp(18px, 3vw, 44px); border-left: 2.5px solid rgba(0,138,137,.4); margin: 0;
-}
-
 /* CTA */
 .rt-cta-block { position: relative; overflow: hidden; background: #0a0a0a; text-align: center; padding: clamp(72px, 10vw, 130px) clamp(24px, 6vw, 80px); }
 .rt-cta-glow {

@@ -31,17 +31,6 @@ export default function IndustrySection() {
 
     useEffect(() => {
         const ctx = gsap.context(() => {
-            // Section wrapper — fades and rises into view
-            gsap.from(sectionRef.current, {
-                opacity: 0, y: 40,
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: 'top 90%',
-                    end: 'top 68%',
-                    scrub: 0.8,
-                },
-            });
-
             const line1Words = line1Ref.current?.querySelectorAll('.line1-word');
             const line2Words = line2Ref.current?.querySelectorAll('.line2-word');
 
@@ -157,7 +146,7 @@ export default function IndustrySection() {
                             boxShadow: '0 0 10px rgba(0,138,137,0.5)',
                         }}
                     />
-                    Physical AI Platform
+                    Industries
                 </span>
 
                 <h2

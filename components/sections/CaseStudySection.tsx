@@ -184,17 +184,6 @@ export default function CaseStudySection() {
     /* ── Lens-style scroll animations for header + panels ── */
     useEffect(() => {
         const ctx = gsap.context(() => {
-            // Section wrapper — fades and rises into view
-            gsap.from(sectionRef.current, {
-                opacity: 0, y: 40,
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: 'top 90%',
-                    end: 'top 68%',
-                    scrub: 0.8,
-                },
-            });
-
             // Eyebrow slides + slightly scales in
             gsap.from('.cs2-eyebrow', {
                 x: -40,
@@ -262,7 +251,7 @@ export default function CaseStudySection() {
     }, []);
 
     return (
-        <section ref={sectionRef} style={{ background: '#070d0b', position: 'relative', overflow: 'hidden' }}>
+        <section id="case-studies" ref={sectionRef} style={{ background: '#070d0b', position: 'relative', overflow: 'hidden' }}>
 
             {/* Subtle grid overlay */}
             <div
@@ -327,7 +316,7 @@ export default function CaseStudySection() {
                     color: 'rgba(255,255,255,0.5)', lineHeight: 1.72, maxWidth: '500px',
                     letterSpacing: '-0.01em', marginTop: '24px',
                 }}>
-                    From whitespace identification to field-rep enablement — three industries, one platform.
+                    From retail to fintech, Digital Atlas helps all industries stay rooted in the real world.
                 </p>
             </div>
 

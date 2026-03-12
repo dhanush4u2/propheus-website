@@ -10,7 +10,7 @@ import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
    Dark mode triggers ONLY when the TOP EDGE of a dark section
    reaches the bottom of the navbar (72px from top).
 ═══════════════════════════════════════════════════════════════ */
-const DARK_SECTION_IDS = ['digital-atlas', 'industry-section', 'cta-footer'];
+const DARK_SECTION_IDS = ['digital-atlas', 'industry-section', 'case-studies', 'cta-footer'];
 
 export default function Navbar() {
     const navRef = useRef<HTMLElement>(null);
@@ -165,22 +165,25 @@ export default function Navbar() {
        4. DARK MODE — IntersectionObserver on dark sections
        Uses rootMargin to only trigger when the dark section's
        top edge reaches the navbar area (72px from viewport top).
+       Works on ALL pages: observes landing-page IDs + any
+       element with [data-navbar-dark] attribute.
     ───────────────────────────────────────────────────────── */
     useEffect(() => {
-        if (!isLandingPage) return;
-
         const observers: IntersectionObserver[] = [];
         darkCount.current = 0;
 
         const checkDark = () => setIsDark(darkCount.current > 0);
 
-        // We only watch the FIRST dark section (#digital-atlas) for entering
-        // dark mode. The other sections follow naturally since they're below.
-        // rootMargin: top = -72px (navbar height), bottom = full viewport minus navbar
-        // This means "intersecting" only when the element's top enters the navbar zone.
-        DARK_SECTION_IDS.forEach((id) => {
-            const el = document.getElementById(id);
-            if (!el) return;
+        const obsOptions: IntersectionObserverInit = {
+            threshold: 0,
+            rootMargin: '0px 0px -90% 0px',
+        };
+
+        const observed = new Set<Element>();
+
+        const observe = (el: Element) => {
+            if (observed.has(el)) return;
+            observed.add(el);
             const obs = new IntersectionObserver(
                 ([entry]) => {
                     if (entry.isIntersecting) {
@@ -190,19 +193,39 @@ export default function Navbar() {
                     }
                     checkDark();
                 },
-                {
-                    // Only trigger when element's top edge is within the navbar zone
-                    // -72px top margin = don't count until element reaches below the navbar
-                    // -calc ensures we only consider the top strip of viewport
-                    threshold: 0,
-                    rootMargin: '0px 0px -90% 0px',
-                }
+                obsOptions,
             );
             obs.observe(el);
             observers.push(obs);
-        });
+        };
 
-        return () => observers.forEach((o) => o.disconnect());
+        // Observe landing-page IDs
+        if (isLandingPage) {
+            DARK_SECTION_IDS.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) observe(el);
+            });
+        }
+
+        // Observe any element with data-navbar-dark (works on all pages)
+        const scanDarkAttr = () => {
+            document.querySelectorAll('[data-navbar-dark]').forEach((el) => observe(el));
+        };
+        scanDarkAttr();
+
+        // Watch for dynamically added dark sections (e.g. tab switch on industry page).
+        // Debounce to avoid hammering querySelectorAll on rapid DOM changes.
+        let scanTimer: ReturnType<typeof setTimeout> | null = null;
+        const mo = new MutationObserver(() => {
+            if (scanTimer) return;
+            scanTimer = setTimeout(() => { scanTimer = null; scanDarkAttr(); }, 200);
+        });
+        mo.observe(document.body, { childList: true, subtree: true });
+
+        return () => {
+            observers.forEach((o) => o.disconnect());
+            mo.disconnect();
+        };
     }, [isLandingPage]);
 
     /* ─────────────────────────────────────────────────────────
@@ -324,14 +347,6 @@ export default function Navbar() {
                         </Link>
                     </div>
                     <div className="navbar-right">
-                        <Link
-                            href="https://retail-agent.alchemy-propheus.ai/explorer/"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="navbar-link"
-                        >
-                            WATCH DEMO
-                        </Link>
                         <HoverBorderGradient
                             as="a"
                             href="/book-demo"
@@ -374,16 +389,6 @@ export default function Navbar() {
                 >
                     Retail
                 </button>
-                <div className="navbar-drawer-divider" />
-                <Link
-                    href="https://retail-agent.alchemy-propheus.ai/explorer/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="navbar-drawer-link"
-                    onClick={closeDrawer}
-                >
-                    Watch Demo
-                </Link>
                 <Link href="/book-demo" className="navbar-drawer-cta" onClick={closeDrawer}>
                     REQUEST ACCESS
                 </Link>

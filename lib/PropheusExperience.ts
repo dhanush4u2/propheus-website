@@ -124,6 +124,7 @@ export class PropheusExperience {
     private tickerCallback: (() => void) | null = null;
     private _boundResize: () => void;
     private _launched = false;
+    private _forceExited = false;
 
     // ========================================
     // INPUT HANDLERS
@@ -222,12 +223,51 @@ export class PropheusExperience {
             window.removeEventListener('wheel', this._onLenisWheel);
         }
 
-        // Unlock hero if locked
+        // Unlock hero if locked — but remove scrollBack immediately after
+        // to prevent re-entering Lenis mode when user scrolls to top.
         if (this.isHeroLocked) {
             this.disengageLock();
         }
+        // Prevent _onScrollBack from re-entering Lenis after force-exit
+        this._forceExited = true;
+        window.removeEventListener('scroll', this._onScrollBack);
 
-        // Restore hero height (may have been expanded for lenis scroll room)
+        // Render the final frame and apply final "shrunk card" visuals
+        // so the hero looks correct when scrolling past it.
+        this.targetFrame = this.LENIS_FRAME_END;
+        this.currentFrame = this.LENIS_FRAME_END;
+        if (this.imagesLoaded) {
+            this.render(this.LENIS_FRAME_END);
+            this.lastRenderedFrame = this.LENIS_FRAME_END;
+        }
+
+        // Cache lenis DOM refs if not yet cached (needed for updateLenisVisuals)
+        if (!this._lenisDomCached) {
+            this._lenisContentEl = this.heroEl.querySelector('.lenis-content') as HTMLElement;
+            this._lenisTextBlock = this.heroEl.querySelector('.lenis-text-block') as HTMLElement;
+            this._lenisOuterCols = Array.from(this.heroEl.querySelectorAll('.parallax-col-outer')) as HTMLElement[];
+            this._lenisInnerCols = Array.from(this.heroEl.querySelectorAll('.parallax-col-inner')) as HTMLElement[];
+            this._lenisDomCached = true;
+        }
+        this.updateLenisVisuals(1);
+        this.lenisExitDone = true;
+
+        // Match the visual state that the normal Lenis scroll-through produces:
+        // ambient canvas hidden, lenis background visible behind the shrunk card
+        this.ambientCanvas.style.opacity = '0';
+        const bgEl = this.heroEl.querySelector('.lenis-bg') as HTMLElement;
+        if (bgEl) bgEl.style.opacity = '1';
+
+        // Hide all segment/overlay UI so only the shrunk canvas card remains
+        this.animController.applyInstant('state0');
+        // state0 still shows headline + clouds — force-hide every overlay layer
+        this.heroEl.querySelectorAll<HTMLElement>('.segment-layer, .hero-clouds-layer').forEach(el => {
+            el.style.opacity = '0';
+            el.style.pointerEvents = 'none';
+        });
+
+        // Set hero to its natural height — the canvas card is inside
+        // the sticky wrapper which just sizes to 100vh.
         this.heroEl.style.height = '';
         const stickyEl = this.heroEl.querySelector('.hero-sticky') as HTMLElement;
         if (stickyEl) {
@@ -247,7 +287,7 @@ export class PropheusExperience {
     };
 
     private _onScrollBack = (): void => {
-        if (this.isHeroLocked || this.isLenisScrollMode) return;
+        if (this.isHeroLocked || this.isLenisScrollMode || this._forceExited) return;
         if (window.scrollY <= 0) {
             // Re-enter Lenis scroll mode at the end (frame 360)
             this.heroState = 4;
@@ -279,6 +319,9 @@ export class PropheusExperience {
        INIT
        ======================================== */
     private init(): void {
+        // Clean stale body classes from a previous session (e.g. navigating back from another page)
+        document.body.classList.remove('lenis-scroll-mode', 'lenis-revealed');
+
         this.setCanvasSize();
         window.addEventListener('resize', this._boundResize);
 
@@ -299,6 +342,10 @@ export class PropheusExperience {
             this.startTicker();
             this.render(0);
             this.lastRenderedFrame = 0;
+
+            // Defensive re-render: layout settling or browser compositing may clear
+            // the canvas after the initial render. Force the ticker to repaint.
+            requestAnimationFrame(() => { this.lastRenderedFrame = -1; });
         });
     }
 
@@ -1230,6 +1277,7 @@ export class PropheusExperience {
         document.documentElement.style.touchAction = '';
         document.body.style.overflow = '';
         document.body.style.touchAction = '';
+        document.body.classList.remove('lenis-scroll-mode', 'lenis-revealed');
         const lenis = getLenisInstance();
         if (lenis) lenis.start();
 
