@@ -198,7 +198,7 @@ export default function DigitalAtlasSection() {
                         }}
                     >
                         <span style={{ display: 'block', fontSize: 'clamp(2.8rem, 5.5vw, 5rem)' }}>The Digital Atlas.</span>
-                        <span style={{ display: 'block', fontSize: 'clamp(1.6rem, 3vw, 2.6rem)', color: 'rgba(255,255,255,0.32)', whiteSpace: 'nowrap' }}>Your operating system for action in the real world </span>
+                        <span style={{ display: 'block', fontSize: 'clamp(1.6rem, 3vw, 2.6rem)', color: 'rgba(255,255,255,0.32)', whiteSpace: 'nowrap' }}>Your playground for action in the real world </span>
                     </h2>
 
                     <p
@@ -213,8 +213,7 @@ export default function DigitalAtlasSection() {
                             margin: 0,
                         }}
                     >
-                        Perceives the physical world. Context-aware AI Agents continuously curate real-world data 
-                        Fuses real-world signals like weather, people movement, demographics, and consumer sentiment into the most comprehensive representation of the world.
+                        Context-aware Physical AI Agents make that playground tangible, curating real-world signals like weather, people movement, demographics, and consumer sentiment into the most comprehensive representation of the world that impacts the way you operate.
                     </p>
                 </div>
 

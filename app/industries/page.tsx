@@ -196,12 +196,12 @@ function DrivingDecisionsBanner({ compact = false }: { compact?: boolean }) {
                     style={{
                         fontFamily: 'var(--font-display)',
                         fontWeight: 700,
-                        fontSize: 'clamp(0.6rem, 0.9vw, 0.72rem)',
+                        fontSize: 'clamp(0.67rem, 1.0vw, 0.8rem)',
                         letterSpacing: '0.13em',
                         lineHeight: 1,
                         color: '#ffffff',
                         background: '#008a89',
-                        padding: '5px 11px 6px',
+                        padding: '6px 12px 7px',
                         borderRadius: '3px',
                         overflow: 'hidden',
                         userSelect: 'none' as const,
@@ -209,7 +209,7 @@ function DrivingDecisionsBanner({ compact = false }: { compact?: boolean }) {
                         pointerEvents: 'none',
                         display: 'inline-flex',
                         justifyContent: 'center',
-                        width: '9.5em',
+                        width: '10.6em',
                         flexShrink: 0,
                         textTransform: 'uppercase' as const,
                     }}
@@ -298,10 +298,6 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                 </div>
                 <div className="rt-intro s-reveal" style={{ position: 'relative', zIndex: 1 }}>
                 <div className="rt-intro-left">
-                    <div className="rt-eyebrow">
-                        <span className="rt-eyebrow-dot" />
-                        Propheus Retail Agent
-                    </div>
                     <h2 className="rt-heading">
                         Retail AI that <em>acts,</em>
                         <br />not reports.
@@ -309,7 +305,6 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                     <p className="rt-body">
                         Propheus' Retail AI Agent curates and analyzes real-world signals that matter for your stores - local events, competitor promos, weather - and delivers recommended actions for the next 14 days. Not dashboards. Decisions.
                     </p>
-                    <DrivingDecisionsBanner compact />
                     <div className="rt-intro-ctas">
                         <Link href="/book-demo" className="rt-hire-cta">
                             Hire the Agent <ArrowRight size={13} strokeWidth={2.5} />
@@ -333,10 +328,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                             );
                         })}
                     </div>
-                    <div className="rt-sig-count">
-                        <span className="rt-sig-count-n">40<sup>+</sup></span>
-                        <span className="rt-sig-count-label">real-world signals<br />curated per store, weekly</span>
-                    </div>
+                    <DrivingDecisionsBanner compact />
                 </div>
             </div>
             </div>
@@ -370,7 +362,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                     </div>
                     <h3 className="rt-workflow-h3">
                         What slows every retailer down,<br />
-                        and how Propheus eliminates it.
+                        and how Retail Agent eliminates it.
                     </h3>
                     <WorkflowStoryWidget dark />
                 </div>
@@ -387,7 +379,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                             The Output
                         </div>
                         <h3 className="rt-plan-h3">
-                            Your manager's plan.<br />Delivered.
+                            Your store manager's plan, Delivered.
                         </h3>
                         <p className="rt-plan-sub">
                             Every Sunday night, each store manager receives a precise action plan
@@ -441,7 +433,7 @@ function RetailPanel({ panelKey }: { panelKey: number }) {
                     <div className="rt-quote-deco" aria-hidden="true">&ldquo;</div>
                     <blockquote className="rt-quote-text">
                         Your stores are alive with signals most teams never see. Foot traffic patterns,
-                        live weather, what competitors are doing next door right now. Propheus reads
+                        live weather, what competitors are doing next door right now. Retail Agent reads
                         all of it and gives your managers something they can actually act on.
                     </blockquote>
                 </div>
@@ -1049,7 +1041,7 @@ export default function IndustriesPage() {
         }
     }, []);
 
-    const heroWords = 'Physical Intelligence, unified.'.split(' ');
+    const heroWords = 'Move Reality with Physical AI'.split(' ');
 
     return (
         <>
@@ -1079,10 +1071,6 @@ export default function IndustriesPage() {
                     </div>
 
                     <div className="ind2-hero-body">
-                        <div className="ind2-hero-badge" ref={heroBadgeRef}>
-                            Propheus Retail Agent
-                        </div>
-
                         <h1 className="ind2-hero-h1" ref={heroHeadRef}>
                             {heroWords.map((w, i) => (
                                 <span key={i} className="ind2-hw-wrap">
@@ -1092,8 +1080,7 @@ export default function IndustriesPage() {
                         </h1>
 
                         <p className="ind2-hero-sub" ref={heroSubRef}>
-                            One platform. Four agents. Every industry context where physical signals
-                            drive real decisions from store floors to travel hubs to distribution zones.
+                            Impact goes both ways - what you do to the physical world, and what it does to you. The future belongs to those who understand it deeply. With that understanding, they can shape reality.
                         </p>
 
                         <button
@@ -1637,14 +1624,21 @@ export default function IndustriesPage() {
     box-shadow: 0 0 32px rgba(0,138,137,0.22);
 }
 .rt-driving-inline {
-    display: inline-flex;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
-    margin: 22px 0 24px;
+    width: 100%;
+    margin: 0;
+    padding: 18px 22px;
+    background: #f5f5f7;
+    border-radius: 10px;
+    border: 1px solid #e5e5e7;
+    box-sizing: border-box;
 }
 .rt-di-word {
     font-family: var(--font-display, 'Syne', sans-serif);
-    font-size: clamp(0.62rem, 0.95vw, 0.75rem);
+    font-size: clamp(0.7rem, 1.06vw, 0.84rem);
     font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;

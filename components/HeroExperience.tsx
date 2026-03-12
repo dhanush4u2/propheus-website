@@ -221,8 +221,7 @@ export default function HeroExperience() {
                             <div className="lenis-text-block">
                                 <LenisTextReveal
                                     heading="Physical AI"
-                                    body="AI Agents for every industry obsessed with ACTING in the real world. Powered by real-world intelligence that gives you the most comprehensive knowledge representation of every place on earth, curated to your unique context. 
-"
+                                    body="Reading the world is a completely different ballgame. You play it better with AI agents that understand the physical world in depth - the nature of places around you, how they evolve over time, local demographics, weather, movement patterns, consumer sentiment, competitor behavior, and much more."
                                 />
                             </div>
                         </div>

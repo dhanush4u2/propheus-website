@@ -85,7 +85,7 @@ export default function BookDemoPage() {
                         </h1>
 
                         <p className="bd-sub">
-                            In 30 minutes, you&apos;ll see how Propheus curates 140+ real-world signals across your locations — weather, competitor promos, footfall, local events — and converts them into store-specific action plans. Every week. Automatically.
+                            You&apos;ll see how Propheus curates real-world signals across your locations, weather, competitor promos, footfall, local events, and converts them into store-specific action plans. Every week. Automatically.
                         </p>
 
                         <div className="bd-steps">

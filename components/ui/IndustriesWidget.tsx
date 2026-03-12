@@ -22,7 +22,7 @@ const partnerships = [
     id: 'retail',
     name: 'Retail',
     image: '/assets/Industries/retail.webp',
-    quote: "Your stores are alive with signals most teams never see. Foot traffic patterns, live weather, what competitors are doing next door—right now. Propheus reads all of it and gives your managers something they can actually act on, before the floor feels it.",
+    quote: "Your stores are alive with signals most teams never see. Foot traffic patterns, live weather, what competitors are doing next door—right now. Retail Agent reads all of it and gives your managers something they can actually act on, before the floor feels it.",
     icon: Store,
     accent: '#2dd4bf'
   },
@@ -38,7 +38,7 @@ const partnerships = [
     id: 'travel',
     name: 'Travel',
     image: '/assets/Industries/travel.webp',
-    quote: "The moment something sells out, pricing windows open and close in minutes. We connect live venue data, crowd patterns, and local signals so your revenue teams always know which way the market is moving—not an hour later.",
+    quote: "Use live context - crowds, events, weather, transit and venue status, and local price movements - to power physical observability, personalize discovery and recommendations, and drive dynamic pricing and smart bundling across flights, stays, and experiences.",
     icon: Plane,
     accent: '#818cf8'
   },
@@ -46,7 +46,7 @@ const partnerships = [
     id: 'o2o',
     name: 'O2O',
     image: '/assets/Industries/o2o.webp',
-    quote: "Every zone has its own pulse. Delivery pressure, demand spikes, competitive gaps. We surface the live signals behind each one so you can tune pricing, staffing, and supply without waiting on the weekly report.",
+    quote: "Harness live context - people movement, events, weather, traffic, and supply - to power physical observability, tune dynamic pricing, sharpen demand planning, and localize product assortment across your O2O pickup, delivery, and ride zones.",
     icon: Smartphone,
     accent: '#2dd4bf'
   }

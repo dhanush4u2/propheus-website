@@ -100,13 +100,13 @@ function NavBtn({ dir, onClick }: { dir: 'prev' | 'next'; onClick: () => void })
             style={{
                 width: '46px', height: '46px',
                 borderRadius: '999px',
-                border: '1px solid rgba(0,0,0,0.16)',
-                background: 'linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0.06))',
+                border: '1px solid rgba(255,255,255,0.12)',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08))',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer',
-                color: '#111',
+                color: 'rgba(255,255,255,0.8)',
                 fontSize: '0.9rem',
-                boxShadow: '0 8px 18px rgba(0,0,0,0.12)',
+                boxShadow: '0 8px 18px rgba(0,0,0,0.4)',
                 backdropFilter: 'blur(10px)',
                 WebkitBackdropFilter: 'blur(10px)',
                 transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
@@ -262,14 +262,14 @@ export default function CaseStudySection() {
     }, []);
 
     return (
-        <section ref={sectionRef} style={{ background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
+        <section ref={sectionRef} style={{ background: '#070d0b', position: 'relative', overflow: 'hidden' }}>
 
             {/* Subtle grid overlay */}
             <div
                 aria-hidden="true"
                 style={{
                     position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0,
-                    backgroundImage: 'linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
+                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
                     backgroundSize: '72px 72px',
                     maskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%)',
                     WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 50%, black 40%, transparent 100%)',
@@ -302,7 +302,7 @@ export default function CaseStudySection() {
                         fontWeight: 800,
                         letterSpacing: '-0.05em',
                         lineHeight: 0.98,
-                        color: '#111111',
+                        color: '#f5f5f5',
                     }}
                 >
                     <span style={{
@@ -314,7 +314,7 @@ export default function CaseStudySection() {
                     <span style={{
                         display: 'block',
                         fontSize: 'clamp(1.8rem, 3.4vw, 2.9rem)',
-                        color: 'rgb(153, 153, 153)',
+                        color: 'rgba(255,255,255,0.32)',
                         letterSpacing: '-0.035em', lineHeight: 1.1,
                         marginTop: '10px',
                     }} className="cs2-subtitle">
@@ -324,7 +324,7 @@ export default function CaseStudySection() {
 
                 <p className="cs2-sub" style={{
                     fontFamily: 'var(--font-body)', fontSize: 'clamp(0.9rem,1.2vw,1.05rem)',
-                    color: '#777', lineHeight: 1.72, maxWidth: '500px',
+                    color: 'rgba(255,255,255,0.5)', lineHeight: 1.72, maxWidth: '500px',
                     letterSpacing: '-0.01em', marginTop: '24px',
                 }}>
                     From whitespace identification to field-rep enablement — three industries, one platform.
@@ -349,7 +349,7 @@ export default function CaseStudySection() {
                         position: 'absolute', top: '-0.15em', left: '-0.06em',
                         fontFamily: 'var(--font-display)', fontWeight: 700,
                         fontSize: 'clamp(9rem,14vw,13rem)', lineHeight: 1,
-                        letterSpacing: '-0.06em', color: 'rgba(0,0,0,0.04)',
+                        letterSpacing: '-0.06em', color: 'rgba(255,255,255,0.04)',
                         userSelect: 'none', pointerEvents: 'none', zIndex: 0,
                     }}>{cs.id}</div>
 
@@ -375,27 +375,27 @@ export default function CaseStudySection() {
                             fontFamily: 'var(--font-display)', fontWeight: 700,
                             fontSize: 'clamp(1.7rem,2.4vw,2.3rem)',
                             letterSpacing: '-0.045em', lineHeight: 1.12,
-                            color: '#111111', margin: '0 0 20px',
+                            color: '#f5f5f5', margin: '0 0 20px',
                         }}>{cs.title}</h3>
 
                         {/* Body */}
                         <p style={{
                             fontFamily: 'var(--font-body)', fontSize: 'clamp(0.88rem,1.1vw,1rem)',
-                            color: '#666', lineHeight: 1.76, margin: '0 0 36px',
+                            color: 'rgba(255,255,255,0.5)', lineHeight: 1.76, margin: '0 0 36px',
                             letterSpacing: '-0.01em', maxWidth: '440px',
                         }}>{cs.body}</p>
 
                         {/* Metrics */}
                         <div style={{
                             display: 'flex', gap: '0', alignItems: 'flex-start',
-                            paddingTop: '24px', borderTop: '1px solid #e8e8e8', marginBottom: '40px',
+                            paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.1)', marginBottom: '40px',
                         }}>
                             {cs.metrics.map((m, mi) => (
                                 <div key={mi} style={{ display: 'flex', alignItems: 'flex-start' }}>
                                     {mi > 0 && (
                                         <div style={{
                                             width: '1px', alignSelf: 'stretch', margin: '4px 24px 0',
-                                            background: 'linear-gradient(to bottom, #e8e8e8, transparent)',
+                                            background: 'linear-gradient(to bottom, rgba(255,255,255,0.15), transparent)',
                                             minHeight: '40px',
                                         }} />
                                     )}
@@ -408,7 +408,7 @@ export default function CaseStudySection() {
                                         }}>{m.value}</div>
                                         <div style={{
                                             fontFamily: 'var(--font-body)', fontSize: '0.62rem',
-                                            fontWeight: 600, color: '#999', marginTop: '6px',
+                                            fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginTop: '6px',
                                             letterSpacing: '0.08em', textTransform: 'uppercase',
                                         }}>{m.label}</div>
                                     </div>
@@ -422,7 +422,7 @@ export default function CaseStudySection() {
                             style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '6px',
                                 fontFamily: 'var(--font-body)', fontSize: '0.82rem', fontWeight: 600,
-                                color: '#111111', textDecoration: 'none', letterSpacing: '-0.01em',
+                                color: '#ffffff', textDecoration: 'none', letterSpacing: '-0.01em',
                                 position: 'relative', marginBottom: '48px',
                             }}
                             onMouseEnter={e => {
@@ -433,8 +433,8 @@ export default function CaseStudySection() {
                             }}
                             onMouseLeave={e => {
                                 const a = e.currentTarget as HTMLAnchorElement;
-                                a.style.color = '#111111';
-                                (a.querySelector('.cs2-link-line') as HTMLElement | null)!.style.background = '#111111';
+                                a.style.color = '#ffffff';
+                                (a.querySelector('.cs2-link-line') as HTMLElement | null)!.style.background = 'rgba(255,255,255,0.5)';
                                 gsap.to(a.querySelector('.cs2-link-arrow'), { x: 0, duration: 0.28, ease: 'power2.out' });
                             }}
                         >
@@ -442,7 +442,7 @@ export default function CaseStudySection() {
                             <span className="cs2-link-arrow" style={{ display: 'inline-block', transition: 'color 0.2s' }}>→</span>
                             <span className="cs2-link-line" style={{
                                 position: 'absolute', bottom: '-3px', left: 0, right: 0,
-                                height: '1px', background: '#111111', transition: 'background 0.2s',
+                                height: '1px', background: 'rgba(255,255,255,0.5)', transition: 'background 0.2s',
                             }} />
                         </Link>
 
@@ -454,7 +454,7 @@ export default function CaseStudySection() {
                                 {CASES.map((_, i) => (
                                     <div key={i} style={{
                                         height: '5px', borderRadius: '3px',
-                                        background: i === activeIndex ? '#111111' : 'rgba(0,0,0,0.12)',
+                                        background: i === activeIndex ? '#ffffff' : 'rgba(255,255,255,0.2)',
                                         width: i === activeIndex ? '22px' : '5px',
                                         transition: 'width 0.35s cubic-bezier(0.4,0,0.2,1), background 0.25s',
                                     }} />
