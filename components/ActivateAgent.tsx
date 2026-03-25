@@ -279,7 +279,7 @@ export default function ActivateAgent({ isMobile = false }: { isMobile?: boolean
 
     return (
         <div className="activate-agent-wrapper select-none" style={{
-            bottom: status === 'idle' ? '10%' : '5%',
+            bottom: isMobile ? (status === 'idle' ? '18%' : '14%') : (status === 'idle' ? '10%' : '5%'),
             transition: 'bottom 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
         }}>
             <motion.div

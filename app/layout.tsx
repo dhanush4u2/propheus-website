@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Playfair_Display, Syne } from 'next/font/google';
 import './globals.css';
 import SmoothScrollProvider from '@/components/SmoothScrollProvider';
+import F1EasterEgg from '@/components/F1EasterEgg';
 
 const inter = Inter({
     subsets: ['latin'],
@@ -38,6 +39,7 @@ export default function RootLayout({
         <html lang="en" className={`${inter.variable} ${playfairDisplay.variable} ${syne.variable}`}>
             <body>
                 <SmoothScrollProvider>{children}</SmoothScrollProvider>
+                <F1EasterEgg />
             </body>
         </html>
     );
