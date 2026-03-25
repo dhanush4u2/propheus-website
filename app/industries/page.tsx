@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
@@ -201,7 +201,8 @@ function DrivingDecisionsBanner({ compact = false }: { compact?: boolean }) {
                         borderRadius: '3px',
                         overflow: 'hidden',
                         userSelect: 'none' as const,
-                        whiteSpace: 'nowrap',
+                        whiteSpace: 'normal',
+                        textAlign: 'center',
                         pointerEvents: 'none',
                         display: 'inline-flex',
                         justifyContent: 'center',
@@ -252,7 +253,8 @@ function DrivingDecisionsBanner({ compact = false }: { compact?: boolean }) {
                         borderRadius: '0.2em',
                         overflow: 'hidden',
                         userSelect: 'none' as const,
-                        whiteSpace: 'nowrap',
+                        whiteSpace: 'normal',
+                        textAlign: 'center',
                         pointerEvents: 'none',
                         display: 'inline-flex',
                         justifyContent: 'center',
@@ -1581,6 +1583,7 @@ export default function IndustriesPage() {
     box-shadow: 0 0 32px rgba(0,138,137,0.22);
 }
 .rt-driving-inline {
+    flex-wrap: wrap;
     display: flex;
     align-items: center;
     justify-content: flex-start;

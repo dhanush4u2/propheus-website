@@ -372,13 +372,6 @@ export default function Navbar() {
 
             {/* Mobile drawer overlay */}
             <div className={`navbar-drawer${drawerOpen ? ' open' : ''}`}>
-                <button
-                    className="navbar-drawer-link"
-                    onClick={() => { closeDrawer(); handleDigitalAtlas(); }}
-                >
-                    Digital Atlas
-                </button>
-                <div className="navbar-drawer-divider" />
                 <Link href="/industries" className="navbar-drawer-link" onClick={closeDrawer}>
                     Industries
                 </Link>

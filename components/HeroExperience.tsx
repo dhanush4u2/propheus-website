@@ -199,11 +199,11 @@ export default function HeroExperience() {
 
                     {/* ============================
                         STATE 4 — Pure Canvas Sweep
-                        Frame 240 → 360 — no UI components
+                        Frame 240 → 240 — no UI components
                        ============================ */}
                     {/* ============================
                         STATE 5 — Lenis Scroll
-                        Frame 360 → 480 — canvas shrinks to 1:1 card,
+                        Frame 240 → 240 — canvas shrinks to 1:1 card,
                         hero-to-page transition with content reveal
                        ============================ */}
 
