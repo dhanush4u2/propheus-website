@@ -357,7 +357,7 @@ export default function Navbar() {
                             <span className="navbar-hbg-text">BOOK A DEMO</span>
                         </HoverBorderGradient>
                         <button onClick={handleRetailObservability} className="navbar-retail-btn">
-                            RETAIL OBSERVABILITY AGENT
+                            Access Retail Agent
                         </button>
                     </div>
                     {/* Hamburger — visible only on mobile via CSS */}
