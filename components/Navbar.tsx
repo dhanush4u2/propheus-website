@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
 
 /* ═══════════════════════════════════════════════════════════════
    IDs of sections that have a dark background on the landing page.
@@ -347,15 +346,6 @@ export default function Navbar() {
                         </Link>
                     </div>
                     <div className="navbar-right">
-                        <HoverBorderGradient
-                            as="a"
-                            href="/book-demo"
-                            containerClassName="navbar-hbg-btn"
-                            className="navbar-hbg-inner"
-                            duration={1.5}
-                        >
-                            <span className="navbar-hbg-text">BOOK A DEMO</span>
-                        </HoverBorderGradient>
                         <button onClick={handleRetailObservability} className="navbar-retail-btn">
                             Access Retail Agent
                         </button>
@@ -386,9 +376,6 @@ export default function Navbar() {
                     Retail Observability Agent
                 </button>
                 <div className="navbar-drawer-divider" />
-                <Link href="/book-demo" className="navbar-drawer-cta" onClick={closeDrawer}>
-                    BOOK A DEMO
-                </Link>
                 <button
                     className="navbar-drawer-cta"
                     onClick={() => { closeDrawer(); handleRetailObservability(); }}
